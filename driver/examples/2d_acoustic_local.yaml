@@ -1,0 +1,52 @@
+name: example_2d_acoustic
+description: Minimal 2D constant-velocity acoustic forward run on a laptop.
+
+simulation:
+  dimension: 2
+  order: 4
+  mode: forward
+  time:
+    steps: 200
+    dt: 5e-4
+    cfl_factor: 0.5
+  output:
+    log_interval: 200
+    wavefield: { enabled: false }
+
+mesh:
+  type: internal
+  origin: [0.0, 0.0]
+  size: [1000.0, 1000.0]
+  elements: [10, 10]
+  max_freq: 30.0
+  ppw: 5.0
+
+material:
+  type: isotropic_acoustic
+  format: constant
+  vp: 1500.0
+  rho: 1000.0
+
+device:
+  type: cpu
+
+boundary:
+  absorbing:
+    type: cerjan
+    sides: []
+    thickness: 0.0
+    alpha: 0.0
+
+receivers:
+  type: [PS]
+
+sources: {}     # placeholder; driver overrides with format/file/shot_id
+
+# Driver-only section: stripped before SEMSWS sees the YAML.
+run:
+  binary: /home/kota/program_ubuntu/SEMSWS/build/src/semsws
+  scheduler: local
+  launcher: local
+  ranks_per_shot: 2
+  device_kind: cpu
+  shots_per_job: 2

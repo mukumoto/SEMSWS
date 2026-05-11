@@ -1,0 +1,48 @@
+# Earth Simulator (JAMSTEC) — CPU build packages.yaml for SEMSWS.
+#
+# Pairs with site-config/es/load_cpu.sh. Either copy this file to
+#   $SPACK_USER_CONFIG_PATH/packages.yaml  (single-target user-scope use)
+# or embed it inside a Spack environment under `spack:packages:`
+# (recommended when you also want a GPU build on the same machine).
+#
+# Toolchain: system gcc 8.5 + system OpenMPI/4.0.5 + module HDF5/1.10.5 +
+# module METIS/5.1.0. BLAS/LAPACK: openblas built with %gcc.
+packages:
+  cmake:
+    externals:
+    - spec: cmake@3.26.5
+      prefix: /usr
+    buildable: false
+
+  openmpi:
+    externals:
+    - spec: openmpi@4.0.5
+      prefix: /opt/share/OpenMPI/4.0.5
+    buildable: false
+
+  # HDF5 / METIS / NetCDF / openblas — all Spack-built with gcc.
+  # Same approach as packages_gpu.yaml; the %gcc require is redundant
+  # in this CPU env (gcc is the only registered compiler) but kept for
+  # symmetry and to remain robust if alternate compilers are added later.
+  hdf5:
+    variants: +mpi+hl
+    require: '%gcc'
+  metis:
+    require: '%gcc'
+  adios2:
+    require: '%gcc'
+  netcdf-c:       { require: '%gcc' }
+  netcdf-cxx4:    { require: '%gcc' }
+  netcdf-fortran: { require: '%gcc' }
+
+  blas:   { require: openblas }
+  lapack: { require: openblas }
+  openblas:
+    require: '%gcc'
+
+  hypre:
+    variants: +shared
+
+  all:
+    providers:
+      mpi: [openmpi]

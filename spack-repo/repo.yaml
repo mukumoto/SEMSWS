@@ -1,0 +1,6 @@
+repo:
+  namespace: semsws
+  # Stay on Package API v1.0 (flat packages/<name>/package.py layout) for
+  # compatibility with both Spack 0.22.x and 1.x. v2.0 requires a
+  # spack_repo/<namespace>/ subdirectory layout.
+  api: v1.0
