@@ -1,0 +1,7 @@
+repo:
+  namespace: mukumoto
+  # Use Package API v1.x flat layout (packages/<name>/package.py directly under
+  # this repo root). Spack v1.x introduced a v2.0 API that requires a
+  # spack_repo/<namespace>/ subdirectory; we stay on v1.x for compatibility
+  # with both Spack 0.22.x and 1.x until the new layout is needed.
+  api: v1.0

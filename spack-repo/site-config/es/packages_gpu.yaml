@@ -1,0 +1,71 @@
+# Earth Simulator (JAMSTEC) — GPU build packages.yaml for SEMSWS.
+#
+# Pairs with site-config/es/load_gpu.sh. Either copy this file to
+#   $SPACK_USER_CONFIG_PATH/packages.yaml  (single-target user-scope use)
+# or embed it inside a Spack environment under `spack:packages:`
+# (recommended when you also want a CPU build on the same machine).
+#
+# Toolchain: NVHPC SDK 24.7 (nvc++) + HPC-X OpenMPI (CUDA-aware) +
+# CUDA 12.0.0 (standalone module, flat layout — keeps cusparse.h
+# co-located with cuda.h). BLAS/LAPACK: openblas built with %gcc to
+# avoid the openblas + nvc `-m32` Makefile bug.
+packages:
+  cmake:
+    externals:
+    - spec: cmake@3.26.5
+      prefix: /usr
+    buildable: false
+
+  nvhpc:
+    externals:
+    - spec: nvhpc@24.7 ~mpi
+      prefix: /opt/share/NVIDIAHPCSDK/24.7
+      extra_attributes:
+        compilers:
+          c:       /opt/share/NVIDIAHPCSDK/24.7/Linux_x86_64/24.7/compilers/bin/nvc
+          cxx:     /opt/share/NVIDIAHPCSDK/24.7/Linux_x86_64/24.7/compilers/bin/nvc++
+          fortran: /opt/share/NVIDIAHPCSDK/24.7/Linux_x86_64/24.7/compilers/bin/nvfortran
+    buildable: false
+
+  openmpi:
+    externals:
+    - spec: openmpi@4.1.7 +cuda fabrics=ucx
+      prefix: /opt/share/NVIDIAHPCSDK/24.7/Linux_x86_64/24.7/comm_libs/12.5/hpcx/hpcx-2.19/ompi
+    buildable: false
+
+  cuda:
+    externals:
+    - spec: cuda@12.0.0
+      prefix: /opt/share/CUDA/12.0.0
+    buildable: false
+
+  # HDF5 / METIS / NetCDF / openblas — all Spack-built with gcc.
+  # System modules tend to ship serial-only HDF5 or index-mismatched
+  # METIS, and Spack-built versions are easier to keep in lock-step with
+  # mfem/hypre/adios2. %gcc pin avoids nvc autotools probes that fail
+  # with `-m32` (openblas/netcdf-c) or other gcc-only configure flags.
+  # gcc-built libs link cleanly into nvc-built mfem because both go
+  # through the system libstdc++ / libc.
+  hdf5:
+    variants: +mpi+hl
+    require: '%gcc'
+  metis:
+    require: '%gcc'
+  adios2:
+    require: '%gcc'
+  netcdf-c:       { require: '%gcc' }
+  netcdf-cxx4:    { require: '%gcc' }
+  netcdf-fortran: { require: '%gcc' }
+
+  blas:   { require: openblas }
+  lapack: { require: openblas }
+  openblas:
+    require: '%gcc'
+
+  hypre:
+    variants: +shared
+
+  all:
+    providers:
+      mpi: [openmpi]
+    variants: cuda_arch=80

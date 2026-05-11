@@ -1,0 +1,119 @@
+<svg width="100%" viewBox="0 0 680 220" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>SEMSWS — 3D globe with transparent wireframe cube</title>
+<defs>
+<radialGradient id="gG" cx="38%" cy="35%" r="55%">
+<stop offset="0%" stop-color="#2a5a9e"/><stop offset="100%" stop-color="#0a1830"/>
+</radialGradient>
+<linearGradient id="wg" x1="0%" y1="0%" x2="100%" y2="0%">
+<stop offset="0%" stop-color="#1a6fd4"/><stop offset="45%" stop-color="#8a2fd4"/><stop offset="100%" stop-color="#e63825"/>
+</linearGradient>
+<radialGradient id="gHighlight" cx="35%" cy="30%" r="40%">
+<stop offset="0%" stop-color="#4a8ad0" stop-opacity="0.3"/><stop offset="100%" stop-color="#4a8ad0" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="gShadow" cx="50%" cy="50%" r="50%">
+<stop offset="70%" stop-color="transparent"/><stop offset="100%" stop-color="#000" stop-opacity="0.3"/>
+</radialGradient>
+</defs>
+
+<g transform="translate(5, 10)">
+<circle cx="95" cy="100" r="92" fill="url(#gG)"/>
+<circle cx="95" cy="100" r="92" fill="url(#gHighlight)"/>
+<circle cx="95" cy="100" r="92" fill="url(#gShadow)"/>
+
+<g stroke="#3a6a9e" stroke-width="0.6" fill="none" opacity="0.25">
+<ellipse cx="95" cy="55" rx="78" ry="8"/>
+<ellipse cx="95" cy="145" rx="78" ry="8"/>
+<ellipse cx="95" cy="100" rx="90" ry="10"/>
+</g>
+<g stroke="#3a6a9e" stroke-width="0.6" fill="none" opacity="0.2">
+<ellipse cx="55" cy="100" rx="8" ry="85"/>
+<ellipse cx="135" cy="100" rx="8" ry="85"/>
+<ellipse cx="95" cy="100" rx="10" ry="90"/>
+</g>
+
+<g stroke="#6a9ad0" stroke-width="1.0" opacity="0.25" stroke-dasharray="4,3">
+<line x1="63" y1="40" x2="158" y2="53"/>
+<line x1="63" y1="40" x2="63" y2="140"/>
+<line x1="158" y1="53" x2="158" y2="153"/>
+<line x1="63" y1="140" x2="158" y2="153"/>
+</g>
+
+<g stroke="#6a9ad0" stroke-width="1.2" opacity="0.4">
+<line x1="35" y1="55" x2="63" y2="40"/>
+<line x1="130" y1="68" x2="158" y2="53"/>
+<line x1="35" y1="155" x2="63" y2="140"/>
+<line x1="130" y1="168" x2="158" y2="153"/>
+</g>
+
+<g stroke="#8ab8e8" stroke-width="1.5" opacity="0.7">
+<line x1="35" y1="55" x2="130" y2="68"/>
+<line x1="35" y1="155" x2="130" y2="168"/>
+<line x1="35" y1="55" x2="35" y2="155"/>
+<line x1="130" y1="68" x2="130" y2="168"/>
+</g>
+
+<g stroke="#8ab8e8" stroke-width="1.2" opacity="0.5">
+<line x1="35" y1="105" x2="130" y2="118"/>
+<line x1="82.5" y1="61.5" x2="82.5" y2="161.5"/>
+</g>
+
+<g fill="#a8d8f0">
+<circle cx="35.0" cy="55.0" r="2.0" opacity="0.85"/>
+<circle cx="48.1" cy="56.8" r="1.3" opacity="0.85"/>
+<circle cx="68.9" cy="59.7" r="1.3" opacity="0.85"/>
+<circle cx="82.5" cy="61.5" r="2.0" opacity="0.85"/>
+<circle cx="96.1" cy="63.3" r="1.3" opacity="0.85"/>
+<circle cx="116.9" cy="66.2" r="1.3" opacity="0.85"/>
+<circle cx="130.0" cy="68.0" r="2.0" opacity="0.85"/>
+<circle cx="35.0" cy="68.8" r="1.3" opacity="0.85"/>
+<circle cx="48.1" cy="70.6" r="0.9" opacity="0.85"/>
+<circle cx="68.9" cy="73.5" r="0.9" opacity="0.85"/>
+<circle cx="82.5" cy="75.3" r="1.3" opacity="0.85"/>
+<circle cx="96.1" cy="77.1" r="0.9" opacity="0.85"/>
+<circle cx="116.9" cy="80.0" r="0.9" opacity="0.85"/>
+<circle cx="130.0" cy="81.8" r="1.3" opacity="0.85"/>
+<circle cx="35.0" cy="91.2" r="1.3" opacity="0.85"/>
+<circle cx="48.1" cy="93.0" r="0.9" opacity="0.85"/>
+<circle cx="68.9" cy="95.9" r="0.9" opacity="0.85"/>
+<circle cx="82.5" cy="97.7" r="1.3" opacity="0.85"/>
+<circle cx="96.1" cy="99.5" r="0.9" opacity="0.85"/>
+<circle cx="116.9" cy="102.4" r="0.9" opacity="0.85"/>
+<circle cx="130.0" cy="104.2" r="1.3" opacity="0.85"/>
+<circle cx="35.0" cy="105.0" r="2.0" opacity="0.85"/>
+<circle cx="48.1" cy="106.8" r="1.3" opacity="0.85"/>
+<circle cx="68.9" cy="109.7" r="1.3" opacity="0.85"/>
+<circle cx="82.5" cy="111.5" r="2.0" opacity="0.85"/>
+<circle cx="96.1" cy="113.3" r="1.3" opacity="0.85"/>
+<circle cx="116.9" cy="116.2" r="1.3" opacity="0.85"/>
+<circle cx="130.0" cy="118.0" r="2.0" opacity="0.85"/>
+<circle cx="35.0" cy="118.8" r="1.3" opacity="0.85"/>
+<circle cx="48.1" cy="120.6" r="0.9" opacity="0.85"/>
+<circle cx="68.9" cy="123.5" r="0.9" opacity="0.85"/>
+<circle cx="82.5" cy="125.3" r="1.3" opacity="0.85"/>
+<circle cx="96.1" cy="127.1" r="0.9" opacity="0.85"/>
+<circle cx="116.9" cy="130.0" r="0.9" opacity="0.85"/>
+<circle cx="130.0" cy="131.8" r="1.3" opacity="0.85"/>
+<circle cx="35.0" cy="141.2" r="1.3" opacity="0.85"/>
+<circle cx="48.1" cy="143.0" r="0.9" opacity="0.85"/>
+<circle cx="68.9" cy="145.9" r="0.9" opacity="0.85"/>
+<circle cx="82.5" cy="147.7" r="1.3" opacity="0.85"/>
+<circle cx="96.1" cy="149.5" r="0.9" opacity="0.85"/>
+<circle cx="116.9" cy="152.4" r="0.9" opacity="0.85"/>
+<circle cx="130.0" cy="154.2" r="1.3" opacity="0.85"/>
+<circle cx="35.0" cy="155.0" r="2.0" opacity="0.85"/>
+<circle cx="48.1" cy="156.8" r="1.3" opacity="0.85"/>
+<circle cx="68.9" cy="159.7" r="1.3" opacity="0.85"/>
+<circle cx="82.5" cy="161.5" r="2.0" opacity="0.85"/>
+<circle cx="96.1" cy="163.3" r="1.3" opacity="0.85"/>
+<circle cx="116.9" cy="166.2" r="1.3" opacity="0.85"/>
+<circle cx="130.0" cy="168.0" r="2.0" opacity="0.85"/>
+</g>
+
+<path d="M38,103 C50,90 62,116 74,103 C86,90 98,116 110,103 C118,94 126,109 132,116"
+      stroke="url(#wg)" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.5"/>
+
+<circle cx="95" cy="100" r="92" fill="none" stroke="#4a7ab5" stroke-width="2"/>
+</g>
+
+<text x="210" y="118" font-family="Helvetica Neue, Arial, sans-serif" font-size="56" font-weight="700" fill="#1a2540" letter-spacing="2">SEMSWS</text>
+</svg>

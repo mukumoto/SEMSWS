@@ -1,0 +1,199 @@
+packages:
+  # Compiler: CCE 20.0.0 (LUMI/25.09 partition/G default).
+  cce:
+    externals:
+    - spec: cce@20.0.0
+      prefix: /opt/cray/pe/cce/20.0.0
+      extra_attributes:
+        compilers:
+          c: /opt/cray/pe/cce/20.0.0/bin/craycc
+          cxx: /opt/cray/pe/cce/20.0.0/bin/crayCC
+          fortran: /opt/cray/pe/cce/20.0.0/bin/crayftn
+
+  # MPI: cray-mpich. The wrapper auto-injects the GTL plugin
+  # (libmpi_gtl_hsa) when MPICH_GPU_SUPPORT_ENABLED=1 and
+  # craype-accel-amd-gfx90a is loaded; SEMSWS recipe also pulls
+  # cray-mpich.gtl_lib via flag_handler so the plugin is linked
+  # into the executable explicitly.
+  cray-mpich:
+    externals:
+    - spec: cray-mpich@9.0.1 +wrappers +rocm amdgpu_target=gfx90a
+      prefix: /opt/cray/pe/mpich/9.0.1/ofi/cray/20.0
+      modules: [PrgEnv-cray, cray-mpich/9.0.1, craype-accel-amd-gfx90a]
+      extra_attributes:
+        compilers:
+          c: /opt/cray/pe/mpich/9.0.1/ofi/cray/20.0/bin/mpicc
+          cxx: /opt/cray/pe/mpich/9.0.1/ofi/cray/20.0/bin/mpicxx
+          fortran: /opt/cray/pe/mpich/9.0.1/ofi/cray/20.0/bin/mpif90
+    buildable: false
+    require: '@9.0.1'
+
+  cray-pmi:
+    externals:
+    - spec: cray-pmi@6.1.16
+      prefix: /opt/cray/pe/pmi/6.1.16
+      modules: [cray-pmi/6.1.16]
+    buildable: false
+
+  mpi:
+    require: cray-mpich
+
+  # HDF5: cray-hdf5 1.14.3.7 (CCE-built, MPI-enabled).
+  hdf5:
+    externals:
+    - spec: hdf5@1.14.3+mpi+hl+cxx+fortran
+      prefix: /opt/cray/pe/hdf5/1.14.3.7/cray/20.0
+      modules: [PrgEnv-cray, cray-hdf5/1.14.3.7]
+    buildable: false
+
+  adios2:
+    require: '%cce'
+
+  # METIS: LUMI EasyBuild module, idx32/fp32 to match SEMSWS precision=single.
+  metis:
+    externals:
+    - spec: metis@5.1.0
+      prefix: /appl/lumi/SW/LUMI-25.09/G/EB/METIS/5.1.0-cpeCray-25.09-idx32-fp32
+      modules: [METIS/5.1.0-cpeCray-25.09-idx32-fp32]
+    buildable: false
+
+  # ROCm 6.4.4 SDK. All components share one prefix; declaring each
+  # as external avoids Spack rebuilding any of them.
+  hip:
+    externals:
+    - spec: hip@6.4.4
+      prefix: /appl/lumi/SW/LUMI-25.09/G/EB/rocm/6.4.4
+      modules: [rocm/6.4.4]
+    buildable: false
+    require: '@6.4.4'
+  hsa-rocr-dev:
+    externals:
+    - spec: hsa-rocr-dev@6.4.4~image
+      prefix: /appl/lumi/SW/LUMI-25.09/G/EB/rocm/6.4.4
+      modules: [rocm/6.4.4]
+    buildable: false
+    require: '@6.4.4'
+  llvm-amdgpu:
+    externals:
+    - spec: llvm-amdgpu@6.4.4
+      prefix: /appl/lumi/SW/LUMI-25.09/G/EB/rocm/6.4.4
+      modules: [rocm/6.4.4]
+    buildable: false
+    require: '@6.4.4'
+  comgr:
+    externals:
+    - spec: comgr@6.4.4
+      prefix: /appl/lumi/SW/LUMI-25.09/G/EB/rocm/6.4.4
+      modules: [rocm/6.4.4]
+    buildable: false
+    require: '@6.4.4'
+  rocminfo:
+    externals:
+    - spec: rocminfo@6.4.4
+      prefix: /appl/lumi/SW/LUMI-25.09/G/EB/rocm/6.4.4
+      modules: [rocm/6.4.4]
+    buildable: false
+    require: '@6.4.4'
+  rocm-cmake:
+    externals:
+    - spec: rocm-cmake@6.4.4
+      prefix: /appl/lumi/SW/LUMI-25.09/G/EB/rocm/6.4.4
+      modules: [rocm/6.4.4]
+    buildable: false
+    require: '@6.4.4'
+  roctracer-dev:
+    externals:
+    - spec: roctracer-dev@6.4.4
+      prefix: /appl/lumi/SW/LUMI-25.09/G/EB/rocm/6.4.4
+      modules: [rocm/6.4.4]
+    buildable: false
+    require: '@6.4.4'
+  rocrand:
+    externals:
+    - spec: rocrand@6.4.4
+      prefix: /appl/lumi/SW/LUMI-25.09/G/EB/rocm/6.4.4
+      modules: [rocm/6.4.4]
+    buildable: false
+    require: '@6.4.4'
+  rocprim:
+    externals:
+    - spec: rocprim@6.4.4
+      prefix: /appl/lumi/SW/LUMI-25.09/G/EB/rocm/6.4.4
+      modules: [rocm/6.4.4]
+    buildable: false
+    require: '@6.4.4'
+  rocthrust:
+    externals:
+    - spec: rocthrust@6.4.4
+      prefix: /appl/lumi/SW/LUMI-25.09/G/EB/rocm/6.4.4
+      modules: [rocm/6.4.4]
+    buildable: false
+    require: '@6.4.4'
+  rocsparse:
+    externals:
+    - spec: rocsparse@6.4.4
+      prefix: /appl/lumi/SW/LUMI-25.09/G/EB/rocm/6.4.4
+      modules: [rocm/6.4.4]
+    buildable: false
+    require: '@6.4.4'
+  rocsolver:
+    externals:
+    - spec: rocsolver@6.4.4
+      prefix: /appl/lumi/SW/LUMI-25.09/G/EB/rocm/6.4.4
+      modules: [rocm/6.4.4]
+    buildable: false
+    require: '@6.4.4'
+  rocblas:
+    externals:
+    - spec: rocblas@6.4.4
+      prefix: /appl/lumi/SW/LUMI-25.09/G/EB/rocm/6.4.4
+      modules: [rocm/6.4.4]
+    buildable: false
+    require: '@6.4.4'
+  hipblas:
+    externals:
+    - spec: hipblas@6.4.4
+      prefix: /appl/lumi/SW/LUMI-25.09/G/EB/rocm/6.4.4
+      modules: [rocm/6.4.4]
+    buildable: false
+    require: '@6.4.4'
+  hipsparse:
+    externals:
+    - spec: hipsparse@6.4.4
+      prefix: /appl/lumi/SW/LUMI-25.09/G/EB/rocm/6.4.4
+      modules: [rocm/6.4.4]
+    buildable: false
+    require: '@6.4.4'
+  hipblaslt:
+    externals:
+    - spec: hipblaslt@6.4.4
+      prefix: /appl/lumi/SW/LUMI-25.09/G/EB/rocm/6.4.4
+      modules: [rocm/6.4.4]
+    buildable: false
+    require: '@6.4.4'
+
+  # BLAS/LAPACK: cray-libsci. CCE crayftn segfaults during the
+  # OpenBLAS test suite, so do not let Spack build OpenBLAS.
+  cray-libsci:
+    externals:
+    - spec: cray-libsci@24.03.0+shared
+      prefix: /opt/cray/pe/libsci/24.03.0/GNU/12.3/x86_64
+      modules: [PrgEnv-cray, cray-libsci/24.03.0]
+    buildable: false
+  blas:
+    require: cray-libsci
+  lapack:
+    require: cray-libsci
+
+  # System cmake: avoids a from-source cmake build (ncurses/lld pain on CCE).
+  cmake:
+    externals:
+    - spec: cmake@3.28.3
+      prefix: /usr
+    buildable: false
+
+  hypre:
+    variants: +shared
+
+  all:
+    variants: amdgpu_target=gfx90a
