@@ -118,110 +118,20 @@ message(STATUS "HDF5 libraries:   ${HDF5_LIBRARIES}")
 set(GSLIB_DIR ${GSLIB_DIR})
 message("gslib dir is ${GSLIB_DIR}")
 
-# =============================================================================
-# Debug: Print all MFEM-related variables to diagnose include path issues
-# =============================================================================
-message(STATUS "=== MFEM Configuration Debug ===")
-message(STATUS "MFEM_INCLUDE_DIRS: ${MFEM_INCLUDE_DIRS}")
-message(STATUS "MFEM_LIBRARIES: ${MFEM_LIBRARIES}")
+# Trust mfem's exported INTERFACE_INCLUDE_DIRECTORIES (build- and
+# install-tree variants both via BUILD_INTERFACE/INSTALL_INTERFACE genex).
+# SEM_MFEM_EXTRA_INCLUDE_DIRS is a manual override for the rare case of
+# an MFEMConfig.cmake that under-exports the install subdirs.
 message(STATUS "MFEM_DIR: ${MFEM_DIR}")
-message(STATUS "MFEM_SOURCE_DIR: ${MFEM_SOURCE_DIR}")
-message(STATUS "MFEM_BINARY_DIR: ${MFEM_BINARY_DIR}")
-message(STATUS "MFEM_CONFIG_DIR: ${MFEM_CONFIG_DIR}")
-message(STATUS "MFEM_USE_CUDA: ${MFEM_USE_CUDA}")
-message(STATUS "MFEM_USE_HIP: ${MFEM_USE_HIP}")
-message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
-foreach(inc_dir ${MFEM_INCLUDE_DIRS})
-    message(STATUS "  MFEM include: ${inc_dir}")
-endforeach()
-# Check the mfem target's interface include directories (this is where the extra path comes from)
-get_target_property(MFEM_TARGET_INCLUDES mfem INTERFACE_INCLUDE_DIRECTORIES)
-message(STATUS "MFEM target INTERFACE_INCLUDE_DIRECTORIES (before fix): ${MFEM_TARGET_INCLUDES}")
+get_target_property(_sem_mfem_inc mfem INTERFACE_INCLUDE_DIRECTORIES)
+message(STATUS "mfem includes: ${_sem_mfem_inc}")
 
-# =============================================================================
-# FIX: Handle MFEM include paths properly
-# Support both installed MFEM (build/include) and source-based builds
-# =============================================================================
-set(MFEM_FILTERED_INCLUDES "")
-foreach(inc_dir ${MFEM_TARGET_INCLUDES})
-    # Check if this is the MFEM build dir (ends with /mfem/build)
-    string(REGEX MATCH ".*/mfem/build$" IS_MFEM_BUILD "${inc_dir}")
-    # Check if this is the MFEM installed include dir (ends with /mfem/build/include)
-    string(REGEX MATCH ".*/mfem/build/include$" IS_MFEM_INSTALL "${inc_dir}")
-    # Check if this is the MFEM source dir (ends with /mfem but not /mfem/build or /mfem/build/include)
-    string(REGEX MATCH ".*/mfem$" IS_MFEM_SOURCE "${inc_dir}")
-
-    if(IS_MFEM_INSTALL)
-        # Already using installed headers, just need to add the /mfem subdir
-        message(STATUS "  MFEM installed include: ${inc_dir}")
-        message(STATUS "  Also adding MFEM subdir: ${inc_dir}/mfem")
-        list(APPEND MFEM_FILTERED_INCLUDES "${inc_dir}")
-        list(APPEND MFEM_FILTERED_INCLUDES "${inc_dir}/mfem")
-    elseif(IS_MFEM_BUILD)
-        # Check if installed headers exist
-        set(MFEM_INSTALL_INCLUDE "${inc_dir}/include")
-        if(EXISTS "${MFEM_INSTALL_INCLUDE}")
-            # Use installed headers location
-            set(MFEM_INSTALL_INCLUDE_MFEM "${inc_dir}/include/mfem")
-            message(STATUS "  Using MFEM installed headers: ${MFEM_INSTALL_INCLUDE}")
-            message(STATUS "  Also adding MFEM subdir: ${MFEM_INSTALL_INCLUDE_MFEM}")
-            list(APPEND MFEM_FILTERED_INCLUDES "${MFEM_INSTALL_INCLUDE}")
-            list(APPEND MFEM_FILTERED_INCLUDES "${MFEM_INSTALL_INCLUDE_MFEM}")
-        else()
-            # MFEM not installed, use source directory (parent of build)
-            get_filename_component(MFEM_SOURCE_ROOT "${inc_dir}" DIRECTORY)
-            message(STATUS "  MFEM not installed, using source dir: ${MFEM_SOURCE_ROOT}")
-            list(APPEND MFEM_FILTERED_INCLUDES "${MFEM_SOURCE_ROOT}")
-            list(APPEND MFEM_FILTERED_INCLUDES "${inc_dir}")
-            # Also add config subdir for _config.hpp
-            list(APPEND MFEM_FILTERED_INCLUDES "${inc_dir}/config")
-        endif()
-    elseif(IS_MFEM_SOURCE)
-        # Keep source directory for uninstalled builds
-        message(STATUS "  Keeping MFEM source dir: ${inc_dir}")
-        list(APPEND MFEM_FILTERED_INCLUDES "${inc_dir}")
-    else()
-        # Keep other include dirs (hypre, metis, mpi, etc.)
-        list(APPEND MFEM_FILTERED_INCLUDES "${inc_dir}")
-    endif()
-endforeach()
-set_target_properties(mfem PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${MFEM_FILTERED_INCLUDES}")
-message(STATUS "MFEM target INTERFACE_INCLUDE_DIRECTORIES (after fix): ${MFEM_FILTERED_INCLUDES}")
-
-# Also fix MFEM_INCLUDE_DIRS (used in target_include_directories calls)
-set(MFEM_INCLUDE_DIRS_FIXED "")
-foreach(inc_dir ${MFEM_INCLUDE_DIRS})
-    string(REGEX MATCH ".*/mfem/build$" IS_MFEM_BUILD "${inc_dir}")
-    string(REGEX MATCH ".*/mfem/build/include$" IS_MFEM_INSTALL "${inc_dir}")
-    if(IS_MFEM_INSTALL)
-        # Already installed path, add the /mfem subdir
-        list(APPEND MFEM_INCLUDE_DIRS_FIXED "${inc_dir}")
-        list(APPEND MFEM_INCLUDE_DIRS_FIXED "${inc_dir}/mfem")
-        message(STATUS "  MFEM_INCLUDE_DIRS fix: ${inc_dir} + ${inc_dir}/mfem")
-    elseif(IS_MFEM_BUILD)
-        # Check if installed headers exist
-        set(MFEM_INSTALL_INCLUDE "${inc_dir}/include")
-        if(EXISTS "${MFEM_INSTALL_INCLUDE}")
-            # Use installed headers: /mfem/build -> /mfem/build/include AND /mfem/build/include/mfem
-            list(APPEND MFEM_INCLUDE_DIRS_FIXED "${inc_dir}/include")
-            list(APPEND MFEM_INCLUDE_DIRS_FIXED "${inc_dir}/include/mfem")
-            message(STATUS "  MFEM_INCLUDE_DIRS fix: ${inc_dir} -> ${inc_dir}/include + ${inc_dir}/include/mfem")
-        else()
-            # MFEM not installed, use source directory
-            get_filename_component(MFEM_SOURCE_ROOT "${inc_dir}" DIRECTORY)
-            list(APPEND MFEM_INCLUDE_DIRS_FIXED "${MFEM_SOURCE_ROOT}")
-            list(APPEND MFEM_INCLUDE_DIRS_FIXED "${inc_dir}")
-            # Also add config subdir for _config.hpp
-            list(APPEND MFEM_INCLUDE_DIRS_FIXED "${inc_dir}/config")
-            message(STATUS "  MFEM_INCLUDE_DIRS fix: using source ${MFEM_SOURCE_ROOT} + ${inc_dir} + ${inc_dir}/config")
-        endif()
-    else()
-        list(APPEND MFEM_INCLUDE_DIRS_FIXED "${inc_dir}")
-    endif()
-endforeach()
-set(MFEM_INCLUDE_DIRS "${MFEM_INCLUDE_DIRS_FIXED}")
-message(STATUS "MFEM_INCLUDE_DIRS (after fix): ${MFEM_INCLUDE_DIRS}")
-message(STATUS "================================")
+set(SEM_MFEM_EXTRA_INCLUDE_DIRS "" CACHE STRING
+    "Extra include dirs appended to the mfem imported target.")
+if(SEM_MFEM_EXTRA_INCLUDE_DIRS)
+    set_property(TARGET mfem APPEND PROPERTY
+        INTERFACE_INCLUDE_DIRECTORIES "${SEM_MFEM_EXTRA_INCLUDE_DIRS}")
+endif()
 
 message(STATUS "MPI include directories: ${MPI_INCLUDE_PATH}")
 message(STATUS "MPI libraries: ${MPI_LIBRARIES}")
