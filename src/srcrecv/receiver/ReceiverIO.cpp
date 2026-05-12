@@ -292,22 +292,23 @@ void ReceiverArray::SaveToHDF5(const std::string& outdir,
                    HDF5Schema::kDefaultCoordSystem);
     write_str_attr(file, HDF5Schema::kAttrUnits, HDF5Schema::kDefaultUnits);
 
-    // ---- /shots/0000/ (single-shot per-file output) ----
-    // Each per-shot file always writes shot id 0; the driver merge tool
-    // assigns the global shot index when bundling multiple files.
+    // ---- /shots/<NNNN>/ (single-shot per-file output) ----
+    // Each per-shot file writes its source's shot_id (set by SetShotId()
+    // from the input config). For YAML-inline runs without sources.shot_id
+    // this defaults to 0, matching the legacy behavior.
     hid_t shots_root = H5Gcreate2(file, HDF5Schema::kGroupShots,
                                   H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    const std::string shot_key = HDF5Schema::ShotKey(0);
+    const std::string shot_key = HDF5Schema::ShotKey(shot_id_);
     hid_t shot_group = H5Gcreate2(shots_root, shot_key.c_str(),
                                   H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    int32_t shot_id_v = 0;
+    int32_t shot_id_v = shot_id_;
     write_scalar_attr(shot_group, HDF5Schema::kAttrShotId, H5T_NATIVE_INT32,
                       &shot_id_v);
 
-    // ---- /shots/0000/sources/ (self-roundtrip) ----
+    // ---- /shots/0000/sources/ (Stage 5; self-roundtrip) ----
     // Only written when the simulation has registered descriptors via
-    // SetOutputSourceContext. Receiver-only callers omit the /sources/
-    // subgroup.
+    // SetOutputSourceContext. Receiver-only callers (legacy) get the
+    // pre-Stage-5 layout with no /sources/ subgroup.
     if (!output_sources_.empty()) {
         WriteSourcesIntoShotGroup(shot_group, space_dim_, output_sources_);
     }

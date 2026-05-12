@@ -1,6 +1,19 @@
-// Receiver.hpp — ReceiverData (single receiver + recorded trace) and
-// ReceiverArray (collection manager). Locations resolved via FindPointsGSLIB;
-// I/O via HDF5 and text.
+/**
+ * @file Receiver.hpp
+ * @brief Modern receiver system for spectral element method
+ *
+ * This file provides receiver classes using MFEM data structures:
+ * - ReceiverType: Enum for measurement types
+ * - ReceiverData: Single receiver with recorded data
+ * - ReceiverArray: Manager for multiple receivers
+ *
+ * Key features:
+ * - All data stored in MFEM Vectors/DenseMatrix
+ * - Automatic receiver location via FindPointsGSLIB
+ * - MPI-aware recording and output
+ * - HDF5 and text file I/O
+ * - Clean interface with RAII
+ */
 
 #ifndef SEM_RECEIVER_HPP
 #define SEM_RECEIVER_HPP
@@ -293,15 +306,19 @@ public:
      *        `/shots/0000/sources/...` by the next HDF5 save. Has no
      *        effect on ASCII / SU output. Cleared by Init().
      *
-     * Self-roundtrip: a per-shot HDF5 file written by SEMSWS can be re-read
-     * via the HDF5 input path, since both source metadata and receiver
-     * waveforms live in the same file.
+     * Stage-5 self-roundtrip: a per-shot HDF5 file written by SEMSWS can
+     * be re-read via the HDF5 input path, since both source metadata and
+     * receiver waveforms live in the same file.
      */
     void SetOutputSourceContext(std::vector<HDF5SourceWriteEntry> sources);
 
+    /// Set the input shot_id used for the internal `/shots/<NNNN>/` group key
+    /// in HDF5 output. Defaults to 0 if never called.
+    void SetShotId(int id) { shot_id_ = id; }
+
     /**
      * @brief Save receivers using the configured format
-     * @param source_id Source identifier
+     * @param source_id Source identifier (used as filename suffix)
      * @param t0 Start time offset
      * @param source_pos Source position (for SU offset headers)
      */
@@ -438,8 +455,13 @@ private:
     std::string output_filename_ = "seismograms";
 
     // Source context for self-roundtrip HDF5 output (set by SetOutputSourceContext).
-    // Empty → /shots/0000/sources/ is omitted (legacy receiver-only output).
+    // Empty → /shots/<shot_id_>/sources/ is omitted (legacy receiver-only output).
     std::vector<HDF5SourceWriteEntry> output_sources_;
+
+    // Input shot_id used for /shots/<NNNN>/ group key in HDF5 output.
+    // Set via SetShotId(); default 0 keeps backward-compat with legacy
+    // single-shot pipelines.
+    int shot_id_ = 0;
 
     // -------------------------------------------------------------------------
     // GPU Recording Data (per ReceiverType)

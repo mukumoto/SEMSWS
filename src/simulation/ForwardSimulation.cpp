@@ -125,35 +125,30 @@ void ForwardSimulation<Dim>::Run() {
             }
         }
 
-        // Wavefield output at specified intervals
-        int wf_source_id = -1;
-        if (this->sources_ && this->sources_->NumSources() > 0) {
-            wf_source_id = this->sources_->GetSource(0)->GetId();
-        }
+        // Wavefield output at specified intervals.
+        // Use input shot_id as the file id (matches receiver output naming).
+        const int wf_id = this->config_->GetSourceShotId();
         for (auto& writer : wavefield_writers_) {
             if (writer->ShouldWrite(step)) {
                 writer->Write(step, current_state.time,
                               &this->Displacement(),
                               &this->Velocity(),
                               &this->Acceleration(),
-                              wf_source_id);
+                              wf_id);
             }
         }
     }
 
     // Final wavefield output
     const SimulationState& final_state = this->State();
-    int wf_source_id = -1;
-    if (this->sources_ && this->sources_->NumSources() > 0) {
-        wf_source_id = this->sources_->GetSource(0)->GetId();
-    }
+    const int wf_id_final = this->config_->GetSourceShotId();
     for (auto& writer : wavefield_writers_) {
         if (writer->ShouldWrite(final_state.step)) {
             writer->Write(final_state.step, final_state.time,
                           &this->Displacement(),
                           &this->Velocity(),
                           &this->Acceleration(),
-                          wf_source_id);
+                          wf_id_final);
         }
     }
 
@@ -162,11 +157,16 @@ void ForwardSimulation<Dim>::Run() {
         writer->Finalize();
     }
 
-    // Save receivers; also embed /shots/0000/sources/ into the HDF5 output
-    // so the file is self-roundtrip — its source metadata can be re-read
-    // via the HDF5 input path.
+    // Save receivers. Filename suffix uses the input shot_id (from
+    // sources.shot_id, default 0) so multi-shot pipelines produce
+    // distinct files even with all sources globally numbered as id=1.
+    // Internal /shots/<NNNN>/ also uses shot_id (set via SetShotId).
+    // Embed /shots/<NNNN>/sources/ into the HDF5 output so the file is
+    // self-roundtrip — its source metadata can be re-read via the
+    // HDF5 input path.
     if (this->receivers_ && this->sources_ && this->sources_->NumSources() > 0) {
-        int source_id = this->sources_->GetSource(0)->GetId();
+        const int shot_id = this->config_->GetSourceShotId();
+        this->receivers_->SetShotId(shot_id);
 
         // Build source descriptors from the live YAML/HDF5 config; STF
         // samples come from SourceTimeFunction::FromConfig (deterministic).
@@ -182,7 +182,7 @@ void ForwardSimulation<Dim>::Run() {
         }
         this->receivers_->SetOutputSourceContext(std::move(src_entries));
 
-        this->receivers_->Save(source_id, this->T0(),
+        this->receivers_->Save(shot_id, this->T0(),
                                &this->sources_->GetSource(0)->Position());
     }
 
@@ -204,6 +204,13 @@ void ForwardSimulation<Dim>::RunSequential() {
     MFEM_VERIFY(this->sources_, "Sources must be set up before RunSequential");
 
     const int num_sources = this->sources_->NumSources();
+
+    // Internal /shots/<NNNN>/ in each per-source file uses input shot_id;
+    // filename suffix per iteration uses the active source's id (below).
+    const int shot_id = this->config_->GetSourceShotId();
+    if (this->receivers_) {
+        this->receivers_->SetShotId(shot_id);
+    }
 
     for (int src_id = 0; src_id < num_sources; src_id++) {
         // Reset all state: u,v,a=0, memory variables=0, receivers=0
@@ -292,9 +299,10 @@ void ForwardSimulation<Dim>::RunSequential() {
             writer->Finalize();
         }
 
-        // Save receivers for this source. Embed /shots/0000/sources/ for
-        // the active source only so each per-shot file is self-roundtrip
-        // with that single source firing alone.
+        // Save receivers for this source. Stage-5: also embed
+        // /shots/0000/sources/ — but only for the active source so that
+        // each per-shot file is self-roundtrip with that single source
+        // firing alone.
         std::vector<HDF5SourceWriteEntry> all_entries;
         if constexpr (Dim == 2) {
             auto cfg = LoadSourceConfig2D(*this->config_);
