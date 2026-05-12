@@ -94,7 +94,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.DEPS }}
-          key: deps-${{ runner.os }}-v3-hypre${{ env.HYPRE_TAG }}-mfem${{ env.MFEM_TAG }}-yamlcpp${{ env.YAMLCPP_TAG }}-adios2${{ env.ADIOS2_TAG }}
+          key: deps-${{ runner.os }}-v4-hypre${{ env.HYPRE_TAG }}-mfem${{ env.MFEM_TAG }}-yamlcpp${{ env.YAMLCPP_TAG }}-adios2${{ env.ADIOS2_TAG }}
 
       # -----------------------------------------------------------------
       # Build yaml-cpp 0.9.0 from source. Ubuntu 22.04 only ships 0.7.0,
@@ -140,18 +140,19 @@ jobs:
           cd "$DEPS"
           git clone --depth=1 --branch "$MFEM_TAG" \
               https://github.com/mfem/mfem.git
+          # MFEM_USE_HDF5 is OFF intentionally: MFEM 4.9's vtkhdf.cpp uses
+          # HDF5 1.12+ APIs (H5S_BLOCK, H5L_info2_t, H5Literate2), but
+          # Ubuntu 22.04 / 24.04 both still ship HDF5 1.10. SEMSWS itself
+          # uses HDF5 directly (not through MFEM) for source/receiver I/O,
+          # so turning off MFEM_USE_HDF5 has no functional impact on the
+          # SEMSWS build/run.
           cmake -S mfem -B mfem/build \
               -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_CXX_COMPILER=mpicxx \
               -DMFEM_USE_MPI=ON \
-              -DMFEM_USE_HDF5=ON \
+              -DMFEM_USE_HDF5=OFF \
               -DMFEM_PRECISION=single \
               -DHYPRE_DIR="$DEPS/hypre/src/hypre" \
-              -DHDF5_DIR="$HDF5_DIR" \
-              -DHDF5_INCLUDE_DIRS="$HDF5_INCLUDE_DIRS" \
-              -DHDF5_LIBRARIES="$HDF5_C_LIBRARY" \
-              -DHDF5_C_LIBRARIES="$HDF5_C_LIBRARY" \
-              -DHDF5_HL_LIBRARIES="$HDF5_HL_LIBRARY" \
               -DMETIS_INCLUDE_DIRS="$METIS_INCLUDE_DIRS" \
               -DMETIS_LIBRARIES="$METIS_LIBRARIES"
           cmake --build mfem/build -j"$(nproc)"
