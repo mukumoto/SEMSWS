@@ -25,7 +25,7 @@ git clone --depth=1 https://github.com/spack/spack.git "${WORK}/spack"
 
 # 2) Clone SEMSWS
 cd "$WORK"
-git clone https://github.com/mukumoto/SEMSWS.git
+git clone https://github.com/SEMSWS/semsws.git
 cd SEMSWS
 
 # 3) Drop loader scripts into place

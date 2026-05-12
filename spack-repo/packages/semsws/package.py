@@ -9,8 +9,8 @@ class Semsws(CMakePackage, CudaPackage, ROCmPackage):
     elastic media in 2D/3D, with optional viscoelastic Q via SLS.
     """
 
-    homepage = "https://github.com/mukumoto/SEMSWS"
-    git = "https://github.com/mukumoto/SEMSWS.git"
+    homepage = "https://github.com/SEMSWS/semsws"
+    git = "https://github.com/SEMSWS/semsws.git"
 
     license("BSD-3-Clause", checked_by="kota-mukumoto")
 

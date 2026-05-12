@@ -23,7 +23,7 @@ git clone --depth=1 https://github.com/spack/spack.git \
 
 # 2) Clone SEMSWS
 cd /flash/${PROJECT}/${USER}
-git clone https://github.com/mukumoto/SEMSWS.git
+git clone https://github.com/SEMSWS/semsws.git
 cd SEMSWS
 
 # 3) Drop site config files into place
