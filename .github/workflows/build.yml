@@ -44,7 +44,8 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
               cmake build-essential gfortran git ca-certificates \
               libopenmpi-dev openmpi-bin \
-              libhdf5-openmpi-dev
+              libhdf5-openmpi-dev \
+              libmetis-dev
 
       # -----------------------------------------------------------------
       # ccache speeds up SEMSWS recompiles across runs (deps cache covers
@@ -116,7 +117,9 @@ jobs:
               -DMFEM_USE_HDF5=ON \
               -DMFEM_PRECISION=single \
               -DHYPRE_DIR="$DEPS/hypre/src/hypre" \
-              -DHDF5_ROOT="$HDF5_ROOT"
+              -DHDF5_ROOT="$HDF5_ROOT" \
+              -DMETIS_INCLUDE_DIRS=/usr/include \
+              -DMETIS_LIBRARIES=/usr/lib/x86_64-linux-gnu/libmetis.so
           cmake --build mfem/build -j"$(nproc)"
 
       # -----------------------------------------------------------------
