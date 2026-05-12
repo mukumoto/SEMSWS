@@ -1,0 +1,138 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel in-flight runs of the same branch when a new commit arrives.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Ubuntu 24.04, CPU, single precision
+    runs-on: ubuntu-24.04
+
+    env:
+      DEPS: ${{ github.workspace }}/deps
+      # Ubuntu parallel HDF5 (OpenMPI flavor) lives in a non-standard prefix.
+      HDF5_ROOT: /usr/lib/x86_64-linux-gnu/hdf5/openmpi
+      # Versions of dependencies built from source. Bump these together with
+      # the cache key below.
+      HYPRE_TAG:    v2.33.0
+      MFEM_TAG:     v4.9
+      YAMLCPP_TAG:  0.9.0
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------
+      # System packages: compiler toolchain, OpenMPI, parallel HDF5, ADIOS2.
+      # NetCDF is intentionally omitted: SEMSWS does not require it at the
+      # CMake level (only MFEM's optional Exodus reader uses it).
+      # -----------------------------------------------------------------
+      - name: Install apt dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+              cmake build-essential gfortran git ca-certificates \
+              libopenmpi-dev openmpi-bin \
+              libhdf5-openmpi-dev \
+              libadios2-openmpi-dev
+
+      # -----------------------------------------------------------------
+      # ccache speeds up SEMSWS recompiles across runs (deps cache covers
+      # MFEM / hypre / yaml-cpp; ccache covers the SEMSWS source tree).
+      # -----------------------------------------------------------------
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ runner.os }}-semsws
+          max-size: 500M
+
+      # -----------------------------------------------------------------
+      # Heavy dependency cache. Hit ratio ~ 100% as long as the tags above
+      # and this key string don't change.
+      # -----------------------------------------------------------------
+      - name: Cache MFEM + hypre + yaml-cpp builds
+        id: deps-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.DEPS }}
+          key: deps-${{ runner.os }}-v1-hypre${{ env.HYPRE_TAG }}-mfem${{ env.MFEM_TAG }}-yamlcpp${{ env.YAMLCPP_TAG }}
+
+      # -----------------------------------------------------------------
+      # Build yaml-cpp 0.9.0 from source. Ubuntu 24.04 only ships 0.8.0,
+      # which SEMSWS rejects via find_package(yaml-cpp 0.9.0 REQUIRED).
+      # -----------------------------------------------------------------
+      - name: Build yaml-cpp ${{ env.YAMLCPP_TAG }}
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p "$DEPS" && cd "$DEPS"
+          git clone --depth=1 --branch "$YAMLCPP_TAG" \
+              https://github.com/jbeder/yaml-cpp.git
+          cmake -S yaml-cpp -B yaml-cpp/build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX="$DEPS/yaml-cpp-install" \
+              -DYAML_BUILD_SHARED_LIBS=ON \
+              -DYAML_CPP_BUILD_TESTS=OFF \
+              -DYAML_CPP_BUILD_TOOLS=OFF
+          cmake --build yaml-cpp/build --target install -j"$(nproc)"
+
+      # -----------------------------------------------------------------
+      # hypre: single precision + MPI (matches the manual's Spack spec).
+      # -----------------------------------------------------------------
+      - name: Build hypre ${{ env.HYPRE_TAG }}
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: |
+          cd "$DEPS"
+          git clone --depth=1 --branch "$HYPRE_TAG" \
+              https://github.com/hypre-space/hypre.git
+          cd hypre/src
+          ./configure --enable-single --with-MPI \
+              CC=mpicc CXX=mpicxx
+          make -j"$(nproc)"
+
+      # -----------------------------------------------------------------
+      # MFEM: parallel + HDF5 + single precision, matching the rest of the
+      # stack. NETCDF is left OFF (see apt note above).
+      # -----------------------------------------------------------------
+      - name: Build MFEM ${{ env.MFEM_TAG }}
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: |
+          cd "$DEPS"
+          git clone --depth=1 --branch "$MFEM_TAG" \
+              https://github.com/mfem/mfem.git
+          cmake -S mfem -B mfem/build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_CXX_COMPILER=mpicxx \
+              -DMFEM_USE_MPI=ON \
+              -DMFEM_USE_HDF5=ON \
+              -DMFEM_PRECISION=single \
+              -DHYPRE_DIR="$DEPS/hypre/src/hypre" \
+              -DHDF5_ROOT="$HDF5_ROOT"
+          cmake --build mfem/build -j"$(nproc)"
+
+      # -----------------------------------------------------------------
+      # SEMSWS itself.
+      # -----------------------------------------------------------------
+      - name: Configure SEMSWS
+        run: |
+          cmake -B build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_PREFIX_PATH="$DEPS/yaml-cpp-install" \
+              -DMFEM_DIR="$DEPS/mfem/build" \
+              -DHDF5_ROOT="$HDF5_ROOT" \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Build SEMSWS
+        run: cmake --build build -j"$(nproc)"
+
+      - name: Verify executables
+        run: |
+          ls -la build/src/
+          ./build/src/semsws --help || true

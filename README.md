@@ -3,6 +3,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/SEMSWS/semsws/actions/workflows/build.yml"><img src="https://github.com/SEMSWS/semsws/actions/workflows/build.yml/badge.svg" alt="Build"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-BSD--3--Clause-green.svg" alt="License: BSD-3-Clause"></a>
   <a href="https://isocpp.org/"><img src="https://img.shields.io/badge/C%2B%2B-17-blue.svg" alt="C++17"></a>
   <a href="https://mfem.org/"><img src="https://img.shields.io/badge/built%20on-MFEM-orange.svg" alt="MFEM"></a>
