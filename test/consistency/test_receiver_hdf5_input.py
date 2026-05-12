@@ -1,4 +1,5 @@
-"""HDF5 receiver-input consistency test.
+"""
+HDF5 receiver-input consistency test (Stage 2).
 
 Runs the same waveform config twice — once with the inline YAML receiver
 list, once with `receivers.format: hdf5` pointing at an h5py-generated v2.0
@@ -174,8 +175,16 @@ def test_hdf5_receiver_input_matches_yaml(
     assert ok, f"{case_id}: HDF5 run failed:\n{msg}"
 
     # --- Compare --------------------------------------------------------------
-    yaml_traces = _read_all_ascii(out_yaml, "0001")
-    h5_traces   = _read_all_ascii(out_h5,   "0001")
+    # Filename suffix depends on mode: simultaneous uses shot_id (default 0),
+    # sequential uses source.id (=1 in test configs).
+    with open(config_path) as _f_cfg:
+        _src_cfg = yaml.safe_load(_f_cfg).get("sources", {})
+    if _src_cfg.get("mode", "sequential") == "simultaneous":
+        suffix_str = f"{_src_cfg.get('shot_id', 0):04d}"
+    else:
+        suffix_str = "0001"
+    yaml_traces = _read_all_ascii(out_yaml, suffix_str)
+    h5_traces   = _read_all_ascii(out_h5,   suffix_str)
     assert yaml_traces, f"{case_id}: no ASCII output from YAML run"
     assert yaml_traces.keys() == h5_traces.keys(), (
         f"{case_id}: trace filename sets differ\n"

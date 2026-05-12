@@ -297,7 +297,14 @@ def test_receiver_format_consistency(
                              mpi_cmd, cwd=work)
     assert ok, f"{case_id}: simulation failed:\n{msg}"
 
-    source_id = "0001"  # matches MakeSourceIdString for config id=1
+    # Filename suffix depends on mode: simultaneous uses input shot_id
+    # (default 0), sequential uses source.id (=1 in test configs).
+    with open(config_path) as _f_cfg:
+        _src_cfg = yaml.safe_load(_f_cfg).get("sources", {})
+    if _src_cfg.get("mode", "sequential") == "simultaneous":
+        source_id = f"{_src_cfg.get('shot_id', 0):04d}"
+    else:
+        source_id = "0001"  # MakeSourceIdString for config id=1
     ascii_traces = read_ascii_traces(outdir, source_id)
     assert ascii_traces, f"{case_id}: no ASCII receiver files found in {outdir}"
 

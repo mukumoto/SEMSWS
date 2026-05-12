@@ -1,17 +1,21 @@
-"""Self-roundtrip HDF5 consistency test.
+"""
+Self-roundtrip HDF5 consistency test (Stage 5).
 
 Verifies that a per-shot HDF5 output written by SEMSWS can be re-read as
 input on a subsequent simulation, producing bit-exact identical receiver
-waveforms. Exercises the v2.0 input path end-to-end.
+waveforms.
 
 Pipeline per case:
   (a) Run simulation with inline YAML source / receivers
-        write ASCII traces + per-shot HDF5 (`seis_<id>.h5` containing
-        `/shots/0000/sources/...` + `/shots/0000/receivers/...`)
+        → write ASCII traces + per-shot HDF5 (`seis_<id>.h5` containing
+          `/shots/0000/sources/...` + `/shots/0000/receivers/...`)
   (b) Run simulation with the **same HDF5 as input** for both `sources:`
       and `receivers:` (format: hdf5, shot_id: 0)
-        write ASCII traces
-  Compare ASCII traces (a) vs (b): bit-exact.
+        → write ASCII traces
+  Compare ASCII traces (a) vs (b) — bit-exact.
+
+This exercises the full Stage-5 self-roundtrip property and the v2.0 input
+path end-to-end.
 
 Usage:
     pytest test/consistency/test_self_roundtrip_hdf5.py --build-dir ./build -v
@@ -108,12 +112,16 @@ def _materialise_yaml_b(src: Path, dst: Path, outdir: Path,
         sim_out["wavefield"]["enabled"] = False
     cfg.setdefault("device", {})["type"] = device
 
-    # Replace sources to read from HDF5.
+    # Replace sources to read from HDF5. Preserve original mode and
+    # shot_id so that the HDF5 input's /shots/<NNNN>/ key matches
+    # (the run-(a) output uses the original shot_id internally).
+    orig_mode = cfg["sources"].get("mode", "sequential")
+    orig_shot_id = cfg["sources"].get("shot_id", 0)
     cfg["sources"] = {
-        "mode": cfg["sources"].get("mode", "sequential"),
+        "mode": orig_mode,
         "format": "hdf5",
         "file": str(h5_input),
-        "shot_id": 0,
+        "shot_id": orig_shot_id,
     }
     # Replace receivers to read from HDF5 (geometry-only). Keep parent
     # `type:` from the original config.
@@ -122,7 +130,7 @@ def _materialise_yaml_b(src: Path, dst: Path, outdir: Path,
         "type": parent_type,
         "format": "hdf5",
         "file": str(h5_input),
-        "shot_id": 0,
+        "shot_id": orig_shot_id,
         "output": {
             "formats": [{"type": "ascii"}],
             "filename": "dummy_b",
@@ -158,9 +166,16 @@ def test_self_roundtrip(
     ok, msg = _run(executable.resolve(), np_procs, cfg_a, mpi_cmd, cwd=work)
     assert ok, f"{case_id}: run-(a) failed:\n{msg}"
 
-    # The per-shot HDF5 emitted by run (a). Source id is 1 in every test
-    # config we're parametrising → file name `seis0001.h5`.
-    h5_input = out_a / "seis0001.h5"
+    # The per-shot HDF5 emitted by run (a). Filename suffix depends on
+    # mode: simultaneous uses input shot_id (default 0), sequential uses
+    # source.id (which is 1 in every test config we're parametrising).
+    with open(config_path) as f_cfg:
+        _src_cfg = yaml.safe_load(f_cfg).get("sources", {})
+    if _src_cfg.get("mode", "sequential") == "simultaneous":
+        suffix = _src_cfg.get("shot_id", 0)
+    else:
+        suffix = 1
+    h5_input = out_a / f"seis{suffix:04d}.h5"
     assert h5_input.exists(), f"{case_id}: missing per-shot HDF5 {h5_input}"
 
     # --- Run (b): use the run-(a) HDF5 as both source + receiver input ------
@@ -171,8 +186,9 @@ def test_self_roundtrip(
     assert ok, f"{case_id}: run-(b) failed:\n{msg}"
 
     # --- Compare ASCII traces ------------------------------------------------
-    a_traces = _read_all_ascii(out_a, "0001")
-    b_traces = _read_all_ascii(out_b, "0001")
+    suffix_str = f"{suffix:04d}"
+    a_traces = _read_all_ascii(out_a, suffix_str)
+    b_traces = _read_all_ascii(out_b, suffix_str)
     assert a_traces, f"{case_id}: no ASCII output from run-(a)"
     assert a_traces.keys() == b_traces.keys(), (
         f"{case_id}: trace filename sets differ\n"

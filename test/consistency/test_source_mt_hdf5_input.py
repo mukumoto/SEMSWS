@@ -1,4 +1,5 @@
-"""HDF5 moment-tensor source-input consistency test.
+"""
+HDF5 moment-tensor source-input consistency test (Stage 4).
 
 Runs the same waveform config twice with a moment_tensor source:
   (a) inline YAML  : `sources.list[0].type=moment_tensor` + `wavelet.type=ricker`
@@ -239,8 +240,16 @@ def test_hdf5_mt_input_matches_yaml(
     assert ok, f"{case_id}: HDF5 MT run failed:\n{msg}"
 
     # --- Compare ASCII traces ------------------------------------------------
-    a_traces = _read_all_ascii(out_a, "0001")
-    b_traces = _read_all_ascii(out_b, "0001")
+    # Filename suffix depends on mode: simultaneous uses input shot_id
+    # (default 0), sequential uses source.id (=1 in test configs).
+    with open(config_path) as _f_cfg:
+        _src_cfg = yaml.safe_load(_f_cfg).get("sources", {})
+    if _src_cfg.get("mode", "sequential") == "simultaneous":
+        suffix_str = f"{_src_cfg.get('shot_id', 0):04d}"
+    else:
+        suffix_str = "0001"
+    a_traces = _read_all_ascii(out_a, suffix_str)
+    b_traces = _read_all_ascii(out_b, suffix_str)
     assert a_traces, f"{case_id}: no ASCII output from YAML MT run"
     assert a_traces.keys() == b_traces.keys(), (
         f"{case_id}: trace filename sets differ\n"
