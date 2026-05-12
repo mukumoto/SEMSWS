@@ -15,8 +15,6 @@
 #define SEM_MATERIAL_FIELD_HPP
 
 #include <mfem.hpp>
-#include "general/forall.hpp"  // MFEM 4.8 mfem.hpp drops this; needed for mfem::Reshape
-#include "linalg/dtensor.hpp"  // For Reshape and DeviceTensor
 
 namespace SEM {
 

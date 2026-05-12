@@ -9,7 +9,7 @@
 #include "integ/SEMIsotropicAcousticIntegrator.hpp"
 #include "integ/core/SEMKernelDispatch.hpp"
 #include "common/GpuMacros.hpp"
-#include "general/forall.hpp"
+#include <mfem.hpp>
 
 namespace SEM {
 

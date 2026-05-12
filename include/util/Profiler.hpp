@@ -18,13 +18,8 @@
 #include <algorithm>
 #include <mpi.h>
 
-// MFEM GPU sync macros
-#ifdef MFEM_USE_CUDA
-#include "general/cuda.hpp"
-#endif
-#ifdef MFEM_USE_HIP
-#include "general/hip.hpp"
-#endif
+// MFEM_DEVICE_SYNC comes from mfem.hpp (umbrella → backends.hpp → cuda/hip)
+#include <mfem.hpp>
 
 namespace SEM {
 

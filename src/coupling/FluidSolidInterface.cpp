@@ -6,7 +6,6 @@
 #include "coupling/FluidSolidInterface.hpp"
 
 #include <mfem.hpp>
-#include "general/forall.hpp"
 
 #include <algorithm>
 #include <limits>

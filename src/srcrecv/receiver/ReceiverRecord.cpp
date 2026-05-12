@@ -4,7 +4,7 @@
  */
 
 #include "srcrecv/Receiver.hpp"
-#include "general/forall.hpp"
+#include <mfem.hpp>
 #include "util/Profiler.hpp"
 
 namespace SEM {

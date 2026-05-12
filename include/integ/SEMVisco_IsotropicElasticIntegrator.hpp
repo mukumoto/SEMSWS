@@ -10,7 +10,6 @@
 #define SEM_VISCO_ISOTROPIC_ELASTIC_INTEGRATOR_HPP
 
 #include <mfem.hpp>
-#include "general/forall.hpp"  // MFEM 4.8 mfem.hpp drops this; needed for mfem::Reshape
 #include "integ/core/SEMIntegratorBase.hpp"
 #include "integ/core/SEMKernelDispatch.hpp"
 #include "integ/attenuation/GeneralizedZener.hpp"

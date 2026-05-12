@@ -12,7 +12,7 @@
 #include "integ/core/SEMKernelDispatch.hpp"
 #include "integ/kernels/AcousticFluxKernel2D.hpp"
 #include "common/GpuMacros.hpp"
-#include "general/forall.hpp"
+#include <mfem.hpp>
 
 namespace SEM {
 

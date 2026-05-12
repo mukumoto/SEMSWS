@@ -10,7 +10,6 @@
 #define SEM_ISOTROPIC_ACOUSTIC_INTEGRATOR_HPP
 
 #include <mfem.hpp>
-#include "general/forall.hpp"  // MFEM 4.8 mfem.hpp drops this; needed for mfem::Reshape
 #include "integ/core/SEMIntegratorBase.hpp"
 #include "integ/core/SEMKernelDispatch.hpp"
 

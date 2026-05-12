@@ -6,7 +6,7 @@
 #include "operator/WaveOperatorBase3D.hpp"
 #include "operator/damping/CerjanABC.hpp"
 #include "srcrecv/Source.hpp"
-#include "general/forall.hpp"
+#include <mfem.hpp>
 #include "util/Profiler.hpp"
 
 namespace SEM {

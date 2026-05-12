@@ -62,6 +62,12 @@ if(NOT MFEM_FOUND)
         "MFEM not found via either MFEMConfig.cmake or config.mk fallback.\n"
         "  MFEM_DIR was: ${_SEM_MFEM_DIR_HINT}")
 endif()
+# SEMSWS uses <mfem.hpp> exclusively; the umbrella only pulls in forall.hpp
+# and linalg/tensor.hpp (transitively dual.hpp) starting in MFEM 4.9.
+if(MFEM_VERSION AND MFEM_VERSION VERSION_LESS 4.9)
+    message(FATAL_ERROR
+        "SEMSWS requires MFEM >= 4.9. Found MFEM ${MFEM_VERSION}.")
+endif()
 
 # =============================================================================
 # Detect MFEM precision (single or double)
@@ -118,20 +124,9 @@ message(STATUS "HDF5 libraries:   ${HDF5_LIBRARIES}")
 set(GSLIB_DIR ${GSLIB_DIR})
 message("gslib dir is ${GSLIB_DIR}")
 
-# Trust mfem's exported INTERFACE_INCLUDE_DIRECTORIES (build- and
-# install-tree variants both via BUILD_INTERFACE/INSTALL_INTERFACE genex).
-# SEM_MFEM_EXTRA_INCLUDE_DIRS is a manual override for the rare case of
-# an MFEMConfig.cmake that under-exports the install subdirs.
 message(STATUS "MFEM_DIR: ${MFEM_DIR}")
 get_target_property(_sem_mfem_inc mfem INTERFACE_INCLUDE_DIRECTORIES)
 message(STATUS "mfem includes: ${_sem_mfem_inc}")
-
-set(SEM_MFEM_EXTRA_INCLUDE_DIRS "" CACHE STRING
-    "Extra include dirs appended to the mfem imported target.")
-if(SEM_MFEM_EXTRA_INCLUDE_DIRS)
-    set_property(TARGET mfem APPEND PROPERTY
-        INTERFACE_INCLUDE_DIRECTORIES "${SEM_MFEM_EXTRA_INCLUDE_DIRS}")
-endif()
 
 message(STATUS "MPI include directories: ${MPI_INCLUDE_PATH}")
 message(STATUS "MPI libraries: ${MPI_LIBRARIES}")

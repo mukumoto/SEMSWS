@@ -12,7 +12,7 @@
 #include "util/FESOrder.hpp"
 #include "integ/core/SEMKernelDispatch.hpp"
 #include "common/GpuMacros.hpp"
-#include "general/forall.hpp"
+#include <mfem.hpp>
 #include "io/ADIOS2IO.hpp"
 
 #include <cmath>

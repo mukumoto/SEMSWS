@@ -5,7 +5,7 @@
 
 #include "integ/core/SEMGeometry.hpp"
 #include "util/FESOrder.hpp"
-#include "general/forall.hpp"
+#include <mfem.hpp>
 
 namespace SEM {
 

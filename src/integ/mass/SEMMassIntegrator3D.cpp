@@ -8,7 +8,7 @@
 #include "integ/mass/SEMMassIntegrator3D.hpp"
 #include "util/FESOrder.hpp"
 #include "integ/core/SEMKernelDispatch.hpp"
-#include "general/forall.hpp"
+#include <mfem.hpp>
 
 namespace SEM {
 

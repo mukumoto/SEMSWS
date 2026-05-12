@@ -10,7 +10,6 @@
 #define SEM_DOF_ORDERING_HPP
 
 #include <mfem.hpp>
-#include "general/forall.hpp"  // MFEM 4.8 mfem.hpp drops this; needed for mfem::Reshape
 
 namespace SEM {
 

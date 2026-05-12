@@ -23,7 +23,6 @@
 #define SEM_KERNEL_VIEWS_HPP
 
 #include <mfem.hpp>
-#include "general/forall.hpp"  // MFEM 4.8 mfem.hpp drops this; needed for mfem::Reshape
 #include "integ/core/SEMGeometry.hpp"
 #include "integ/core/SEMDofOrdering.hpp"
 
