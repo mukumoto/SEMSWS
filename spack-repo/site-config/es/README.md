@@ -1,81 +1,82 @@
 # Earth Simulator (JAMSTEC) site config for SEMSWS
 
-GPU パーティション (NVIDIA A100, sm_80) と CPU パーティション両対応の Spack
-ビルド設定一式。LUMI と同じ形式 (load.sh + packages.yaml) を提供しつつ、
-ES では GPU/CPU の 2 ターゲットがあるため両方分の設定を同梱しています。
+Spack build settings for both the GPU partition (NVIDIA A100, sm_80) and the
+CPU partition. Same shape as the LUMI config (load.sh + packages.yaml), but
+ES has two targets so both flavours ship side by side.
 
 ```text
-load_gpu.sh           module load + Spack 環境ロード (NVHPC + CUDA)
-load_cpu.sh           module load + Spack 環境ロード (gcc + system OpenMPI)
+load_gpu.sh           module load + Spack environment (NVHPC + CUDA)
+load_cpu.sh           module load + Spack environment (gcc + system OpenMPI)
 packages_gpu.yaml     externals: nvhpc / hpcx-ompi / cuda 12.0 / cmake
                       Spack-built (%gcc): hdf5 / metis / netcdf / openblas
 packages_cpu.yaml     externals: system OpenMPI 4.0.5 / cmake
                       Spack-built (%gcc): hdf5 / metis / netcdf / openblas
 ```
 
-## 初回セットアップ
+## First-time setup
 
 ```bash
-# 0) 作業ディレクトリ
-export WORK=/S/data01/G3506/${USER}/program_test   # 自分の path に
+# 0) Working directory
+export WORK=/S/data01/G3506/${USER}/program_test   # change to your path
 mkdir -p "$WORK"
 
-# 1) Spack を clone (1 回だけ。site 共有なら省略可)
+# 1) Clone Spack (one time; can be skipped if the site share already has it)
 git clone --depth=1 https://github.com/spack/spack.git "${WORK}/spack"
 
-# 2) SEMSWS を clone
+# 2) Clone SEMSWS
 cd "$WORK"
 git clone https://github.com/mukumoto/SEMSWS.git
 cd SEMSWS
 
-# 3) load 系を所定の場所へコピー
+# 3) Drop loader scripts into place
 cp spack-repo/site-config/es/load_gpu.sh ~/load_gpu.sh
 cp spack-repo/site-config/es/load_cpu.sh ~/load_cpu.sh
 chmod +x ~/load_gpu.sh ~/load_cpu.sh
 ```
 
-ここから先は **(A) GPU/CPU の片方だけ使う** か **(B) 両方並立** で手順が変わります。
+From here, choose **(A) single target** or **(B) GPU + CPU side by side**.
 
-## (A) 単一ターゲット (LUMI と同じ形)
+## (A) Single target (LUMI-style)
 
-GPU だけ、または CPU だけ使う場合。LUMI 用 README と同じ流れ。
+For "GPU only" or "CPU only" use cases. Same flow as the LUMI README.
 
 ```bash
-# GPU で使う例
+# GPU example
 source ~/load_gpu.sh
 mkdir -p ~/.spack
 [ -f ~/.spack/packages.yaml ] && mv ~/.spack/packages.yaml ~/.spack/packages.yaml.bak
 cp spack-repo/site-config/es/packages_gpu.yaml ~/.spack/packages.yaml
-# あるいは SPACK_USER_CONFIG_PATH 経由 (load_gpu.sh が $WORK/.spack を指す):
+# Or via SPACK_USER_CONFIG_PATH (load_gpu.sh points it at $WORK/.spack):
 cp spack-repo/site-config/es/packages_gpu.yaml "$SPACK_USER_CONFIG_PATH/packages.yaml"
 
-spack compiler find                    # nvhpc@24.7 + gcc@8.5 が登録される
+spack compiler find                    # registers nvhpc@24.7 + gcc@8.5
 spack repo add "$WORK/SEMSWS/spack-repo"
 spack install semsws@main +cuda cuda_arch=80 precision=single +gpu_aware_mpi \
   cxxflags=="-noswitcherror" cflags=="-noswitcherror" ldlibs=="-lstdc++fs" \
   ^hypre@2.33 %nvhpc
 ```
 
-CPU の場合は `load_cpu.sh` + `packages_cpu.yaml` に差し替え、`spack install
-semsws@main precision=single %gcc` とする。
+For CPU, swap to `load_cpu.sh` + `packages_cpu.yaml` and run
+`spack install semsws@main precision=single %gcc`.
 
-## (B) GPU と CPU を並立 (Spack environment 推奨)
+## (B) GPU and CPU side by side (Spack environment)
 
-両方 install して使い分けたい場合は Spack environment で分離する。
-`SPACK_USER_CONFIG_PATH` を切り替える方式より、env 単位で完結する方が
-事故が少ない。
+To install both and switch between them, isolate via Spack environments
+rather than swapping `SPACK_USER_CONFIG_PATH` — env-scoped configuration
+is harder to break by accident.
+
+### GPU env
 
 ```bash
-# GPU env
 source ~/load_gpu.sh
 spack compiler find
 spack env create semsws-gpu
 spack env activate semsws-gpu
-spack config edit                       # エディタが開く
-# spack.yaml に以下を貼る (packages_gpu.yaml の内容を packages: の下にネスト)
+spack config edit                       # opens an editor
+# Paste the GPU spack.yaml below (packages_gpu.yaml content nested under packages:)
 ```
 
-`semsws-gpu` の `spack.yaml`:
+`semsws-gpu` `spack.yaml`:
 
 ```yaml
 spack:
@@ -83,15 +84,41 @@ spack:
   - /S/data01/G3506/<USER>/program_test/SEMSWS/spack-repo
 
   packages:
-    # ↓ packages_gpu.yaml の中身をここに丸ごとインデント
     cmake:
       externals:
       - spec: cmake@3.26.5
         prefix: /usr
       buildable: false
-    nvhpc: ...
-    openmpi: ...
-    cuda: ...
+    nvhpc:
+      externals:
+      - spec: nvhpc@24.7 ~mpi
+        prefix: /opt/share/NVIDIAHPCSDK/24.7
+        extra_attributes:
+          compilers:
+            c:       /opt/share/NVIDIAHPCSDK/24.7/Linux_x86_64/24.7/compilers/bin/nvc
+            cxx:     /opt/share/NVIDIAHPCSDK/24.7/Linux_x86_64/24.7/compilers/bin/nvc++
+            fortran: /opt/share/NVIDIAHPCSDK/24.7/Linux_x86_64/24.7/compilers/bin/nvfortran
+      buildable: false
+    openmpi:
+      externals:
+      - spec: openmpi@4.1.7 +cuda fabrics=ucx
+        prefix: /opt/share/NVIDIAHPCSDK/24.7/Linux_x86_64/24.7/comm_libs/12.5/hpcx/hpcx-2.19/ompi
+      buildable: false
+    cuda:
+      externals:
+      - spec: cuda@12.0.0
+        prefix: /opt/share/CUDA/12.0.0
+      buildable: false
+    hdf5:
+      variants: +mpi+hl
+      require: '%gcc'
+    metis:
+      require: '%gcc'
+    adios2:
+      require: '%gcc'
+    netcdf-c:       { require: '%gcc' }
+    netcdf-cxx4:    { require: '%gcc' }
+    netcdf-fortran: { require: '%gcc' }
     blas:   { require: openblas }
     lapack: { require: openblas }
     openblas:
@@ -116,42 +143,95 @@ spack:
 spack concretize -f
 spack install --fail-fast
 spack env deactivate
+```
 
-# CPU env
+### CPU env
+
+```bash
 source ~/load_cpu.sh
 spack compiler find
 spack env create semsws-cpu
 spack env activate semsws-cpu
 spack config edit
-# packages_cpu.yaml の内容 + spec: semsws@main precision=single %gcc
+# Paste the CPU spack.yaml below
+```
+
+`semsws-cpu` `spack.yaml`:
+
+```yaml
+spack:
+  repos:
+  - /S/data01/G3506/<USER>/program_test/SEMSWS/spack-repo
+
+  packages:
+    cmake:
+      externals:
+      - spec: cmake@3.26.5
+        prefix: /usr
+      buildable: false
+    openmpi:
+      externals:
+      - spec: openmpi@4.0.5
+        prefix: /opt/share/OpenMPI/4.0.5
+      buildable: false
+    hdf5:
+      variants: +mpi+hl
+      require: '%gcc'
+    metis:
+      require: '%gcc'
+    adios2:
+      require: '%gcc'
+    netcdf-c:       { require: '%gcc' }
+    netcdf-cxx4:    { require: '%gcc' }
+    netcdf-fortran: { require: '%gcc' }
+    blas:   { require: openblas }
+    lapack: { require: openblas }
+    openblas:
+      require: '%gcc'
+    hypre:
+      variants: +shared
+    all:
+      providers:
+        mpi: [openmpi]
+
+  specs:
+  - semsws@main precision=single %gcc
+
+  concretizer:
+    unify: true
+  config:
+    build_jobs: 4
+```
+
+```bash
 spack concretize -f
 spack install --fail-fast
 spack env deactivate
 ```
 
-## 2 回目以降のセッション
+## Subsequent sessions
 
 ```bash
-# GPU 使うとき
+# GPU
 source ~/load_gpu.sh
-spack env activate semsws-gpu          # (B) 方式の場合
+spack env activate semsws-gpu          # only for the (B) flow
 spack load semsws
 
-# CPU 使うとき
+# CPU
 source ~/load_cpu.sh
 spack env activate semsws-cpu
 spack load semsws
 ```
 
-## 注意
+## Notes
 
-- **module 競合**: `NVIDIAHPCSDK/24.7/...` と `OpenMPI/4.0.5` は同時 load
-  できない。load_gpu.sh / load_cpu.sh は冒頭で `module purge` してから
-  入れ直す設計。切替時は必ず適切な `source ~/load_xxx.sh` を実行。
-- **CUDA 12.0 を使う理由**: NVHPC SDK 24.7 同梱の CUDA 12.5 は分割
-  レイアウトで MFEM が `cusparse.h` を見失う。`/opt/share/CUDA/12.0.0` の
-  flat レイアウト standalone モジュールを採用。
-- **hypre 2.33 を強制**: hypre 3.x は ES の gcc 8.5 + nvcc で cstddef の
-  extern "C" 問題と CMake FindMPI の NVHPC 互換問題を踏むため。shadow
-  recipe (`spack-repo/packages/hypre/`) で cuSOLVER OFF + FSAI device
-  バグ回避済み。
+- **Module conflicts**: `NVIDIAHPCSDK/24.7/...` and `OpenMPI/4.0.5` cannot be
+  loaded together. Both `load_gpu.sh` and `load_cpu.sh` start with
+  `module purge`. Always re-source the right `~/load_xxx.sh` when switching.
+- **Why CUDA 12.0**: the CUDA 12.5 bundled with NVHPC SDK 24.7 uses a split
+  layout that hides `cusparse.h` from MFEM. The standalone
+  `/opt/share/CUDA/12.0.0` flat-layout module is used instead.
+- **hypre 2.33 is pinned**: hypre 3.x trips two issues with ES gcc 8.5 +
+  nvcc — a `cstddef` `extern "C"` clash and a CMake `FindMPI` mismatch with
+  NVHPC. The shadow recipe under `spack-repo/packages/hypre/` already
+  disables cuSOLVER and works around the FSAI device bug.

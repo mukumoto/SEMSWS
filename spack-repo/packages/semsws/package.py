@@ -17,6 +17,7 @@ class Semsws(CMakePackage, CudaPackage, ROCmPackage):
     maintainers("kota-mukumoto")
 
     version("main", branch="main")
+    version("0.1.0", tag="v0.1.0")
 
     variant("precision",
             default="double",
