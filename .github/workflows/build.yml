@@ -19,8 +19,7 @@ jobs:
 
     env:
       DEPS: ${{ github.workspace }}/deps
-      # Ubuntu parallel HDF5 (OpenMPI flavor) lives in a non-standard prefix.
-      HDF5_ROOT: /usr/lib/x86_64-linux-gnu/hdf5/openmpi
+
       # Versions of dependencies built from source. Bump these together with
       # the cache key below.
       HYPRE_TAG:    v2.33.0
@@ -28,11 +27,24 @@ jobs:
       YAMLCPP_TAG:  yaml-cpp-0.9.0
       ADIOS2_TAG:   v2.10.2
 
+      # Ubuntu 22.04 ships parallel HDF5 in a flavor-prefixed layout instead
+      # of /usr/include and /usr/lib. Both MFEM (which has its own
+      # FindHDF5.cmake) and SEMSWS need every variable spelled out, since
+      # neither auto-detects this split layout reliably.
+      HDF5_DIR:          /usr/lib/x86_64-linux-gnu/hdf5/openmpi
+      HDF5_INCLUDE_DIRS: /usr/include/hdf5/openmpi
+      HDF5_C_LIBRARY:    /usr/lib/x86_64-linux-gnu/hdf5/openmpi/libhdf5.so
+      HDF5_HL_LIBRARY:   /usr/lib/x86_64-linux-gnu/hdf5/openmpi/libhdf5_hl.so
+
+      # METIS lives at the standard apt locations.
+      METIS_INCLUDE_DIRS: /usr/include
+      METIS_LIBRARIES:    /usr/lib/x86_64-linux-gnu/libmetis.so
+
     steps:
       - uses: actions/checkout@v4
 
       # -----------------------------------------------------------------
-      # System packages: compiler toolchain, OpenMPI, parallel HDF5.
+      # System packages: compiler toolchain, OpenMPI, parallel HDF5, METIS.
       # ADIOS2 is built from source below (no Ubuntu apt package ships a
       # version SEMSWS can pick up reliably). NetCDF is intentionally
       # omitted: SEMSWS does not require it at the CMake level (only
@@ -47,9 +59,25 @@ jobs:
               libhdf5-openmpi-dev \
               libmetis-dev
 
+      # Sanity-check that the paths we hard-coded actually exist on this
+      # runner. Fails the job early with a clear message instead of letting
+      # the CMake invocations several minutes later complain.
+      - name: Verify dependency paths
+        run: |
+          set -e
+          for f in \
+              "$HDF5_INCLUDE_DIRS/H5public.h" \
+              "$HDF5_C_LIBRARY" \
+              "$HDF5_HL_LIBRARY" \
+              "$METIS_INCLUDE_DIRS/metis.h" \
+              "$METIS_LIBRARIES"; do
+              test -e "$f" || { echo "MISSING: $f"; exit 1; }
+              echo "OK: $f"
+          done
+
       # -----------------------------------------------------------------
       # ccache speeds up SEMSWS recompiles across runs (deps cache covers
-      # MFEM / hypre / yaml-cpp; ccache covers the SEMSWS source tree).
+      # MFEM / hypre / yaml-cpp / ADIOS2; ccache covers the SEMSWS tree).
       # -----------------------------------------------------------------
       - name: Set up ccache
         uses: hendrikmuhs/ccache-action@v1
@@ -66,10 +94,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.DEPS }}
-          key: deps-${{ runner.os }}-v2-hypre${{ env.HYPRE_TAG }}-mfem${{ env.MFEM_TAG }}-yamlcpp${{ env.YAMLCPP_TAG }}-adios2${{ env.ADIOS2_TAG }}
+          key: deps-${{ runner.os }}-v3-hypre${{ env.HYPRE_TAG }}-mfem${{ env.MFEM_TAG }}-yamlcpp${{ env.YAMLCPP_TAG }}-adios2${{ env.ADIOS2_TAG }}
 
       # -----------------------------------------------------------------
-      # Build yaml-cpp 0.9.0 from source. Ubuntu 24.04 only ships 0.8.0,
+      # Build yaml-cpp 0.9.0 from source. Ubuntu 22.04 only ships 0.7.0,
       # which SEMSWS rejects via find_package(yaml-cpp 0.9.0 REQUIRED).
       # -----------------------------------------------------------------
       - name: Build yaml-cpp ${{ env.YAMLCPP_TAG }}
@@ -101,8 +129,10 @@ jobs:
           make -j"$(nproc)"
 
       # -----------------------------------------------------------------
-      # MFEM: parallel + HDF5 + single precision, matching the rest of the
-      # stack. NETCDF is left OFF (see apt note above).
+      # MFEM: parallel + HDF5 + single precision. NETCDF is left OFF.
+      # Every external (hypre / METIS / HDF5) is pointed at explicitly
+      # because MFEM's bundled FindHDF5 / FindMETIS do not pick up Ubuntu's
+      # split paths on their own.
       # -----------------------------------------------------------------
       - name: Build MFEM ${{ env.MFEM_TAG }}
         if: steps.deps-cache.outputs.cache-hit != 'true'
@@ -117,9 +147,13 @@ jobs:
               -DMFEM_USE_HDF5=ON \
               -DMFEM_PRECISION=single \
               -DHYPRE_DIR="$DEPS/hypre/src/hypre" \
-              -DHDF5_ROOT="$HDF5_ROOT" \
-              -DMETIS_INCLUDE_DIRS=/usr/include \
-              -DMETIS_LIBRARIES=/usr/lib/x86_64-linux-gnu/libmetis.so
+              -DHDF5_DIR="$HDF5_DIR" \
+              -DHDF5_INCLUDE_DIRS="$HDF5_INCLUDE_DIRS" \
+              -DHDF5_LIBRARIES="$HDF5_C_LIBRARY" \
+              -DHDF5_C_LIBRARIES="$HDF5_C_LIBRARY" \
+              -DHDF5_HL_LIBRARIES="$HDF5_HL_LIBRARY" \
+              -DMETIS_INCLUDE_DIRS="$METIS_INCLUDE_DIRS" \
+              -DMETIS_LIBRARIES="$METIS_LIBRARIES"
           cmake --build mfem/build -j"$(nproc)"
 
       # -----------------------------------------------------------------
@@ -148,7 +182,10 @@ jobs:
           cmake --build ADIOS2/build --target install -j"$(nproc)"
 
       # -----------------------------------------------------------------
-      # SEMSWS itself.
+      # SEMSWS itself. Pass the same explicit HDF5 paths as MFEM (CMake's
+      # built-in FindHDF5 can usually follow HDF5_ROOT, but on Ubuntu's
+      # split layout the explicit form is more reliable). yaml-cpp and
+      # ADIOS2 are picked up via CMAKE_PREFIX_PATH.
       # -----------------------------------------------------------------
       - name: Configure SEMSWS
         run: |
@@ -156,7 +193,10 @@ jobs:
               -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_PREFIX_PATH="$DEPS/yaml-cpp-install;$DEPS/adios2-install" \
               -DMFEM_DIR="$DEPS/mfem/build" \
-              -DHDF5_ROOT="$HDF5_ROOT" \
+              -DHDF5_ROOT="$HDF5_DIR" \
+              -DHDF5_INCLUDE_DIRS="$HDF5_INCLUDE_DIRS" \
+              -DHDF5_C_LIBRARIES="$HDF5_C_LIBRARY" \
+              -DHDF5_LIBRARIES="$HDF5_C_LIBRARY" \
               -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build SEMSWS
