@@ -54,8 +54,17 @@ SEMSWS depends on the following projects. See each project for its own license:
 
 ## Documentation
 
-Full installation and usage documentation is distributed as a separate PDF
-manual. A copy will be included in this repository once released.
+The full user manual---covering build / installation procedures (local,
+Earth Simulator, LUMI; both manual and Spack routes), the configuration
+file reference, tools, examples, and performance results---is distributed as
+a PDF under [`manual/`](manual/):
+
+- [`manual/semsws_manual_EN.pdf`](manual/semsws_manual_EN.pdf) — English
+- [`manual/semsws_manual_JA.pdf`](manual/semsws_manual_JA.pdf) — 日本語
+
+ビルド・インストール手順(ローカル / Earth Simulator / LUMI、手動・Spack 両方)、
+設定ファイルリファレンス、ツール、応用例、性能結果をまとめたユーザー
+マニュアルは [`manual/`](manual/) 以下に PDF として同梱しています。
 
 ## License
 
