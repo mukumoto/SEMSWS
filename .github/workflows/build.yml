@@ -14,8 +14,8 @@ concurrency:
 
 jobs:
   build:
-    name: Ubuntu 22.04, CPU, single precision
-    runs-on: ubuntu-22.04
+    name: Ubuntu 24.04, CPU, single precision
+    runs-on: ubuntu-24.04
 
     env:
       DEPS: ${{ github.workspace }}/deps
