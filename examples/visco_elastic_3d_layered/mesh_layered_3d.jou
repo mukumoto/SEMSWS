@@ -1,0 +1,98 @@
+# =============================================================================
+# CUBIT Journal File: 3D 2-Layer Mesh with Conforming 2:1 Transition
+# =============================================================================
+# Domain: 10000m (X) x 10000m (Y) x 10000m (Z)
+# 2 Layers with conforming 2:1 h-refinement (HEX only)
+#
+# Coordinate system (matches SPECFEM3D):
+#   x = 0 to 10000, y = 0 to 10000
+#   z = -10000 (bottom) to 0 (surface)
+#
+# Layer boundaries:
+#   Layer 1 (bottom):  z = -10000  to z = -4000  (Vp=5000, fast)
+#   Layer 2 (top):     z = -4000   to z = 0      (Vp=2000, slow)
+#
+# Mesh strategy:
+#   Base mesh: 1000m (10x10x10 = 1,000 hexes)
+#   Refine z > -3000: top 3 layers become 500m
+#   Transition zone: z=-4000 to -3000 (at material interface)
+#
+#   z = -10000 to -4000 : coarse 1000m  (material 1)
+#   z = -4000  to -3000 : transition    (material 2)
+#   z = -3000  to  0    : refined 500m  (material 2)
+# =============================================================================
+
+reset
+
+# -----------------------------------------------------------------------------
+# Create single volume (z = -10000 to 0)
+# -----------------------------------------------------------------------------
+brick x 10000 y 10000 z 10000
+move volume 1 x 5000 y 5000 z -5000
+
+# -----------------------------------------------------------------------------
+# Initial coarse mesh (1000m elements -> 10x10x10 = 1,000 hexes)
+# -----------------------------------------------------------------------------
+volume 1 size 1000
+volume 1 scheme map
+mesh volume 1
+
+# -----------------------------------------------------------------------------
+# Refine upper region (z > -3000): 1000m -> 500m
+# Transition zone at z=-4000 to -3000, directly below material interface
+# Transition upper boundary = material interface = start of refined zone
+# -----------------------------------------------------------------------------
+group "upper_hexes" add hex with z_coord > -3000
+refine hex in group upper_hexes numsplit 1 bias 1 depth 1 no_smooth
+delete group upper_hexes
+
+# -----------------------------------------------------------------------------
+# Block assignments (material attributes)
+# Material interface at z=-4000 (bottom of transition zone)
+# This gives a clean boundary: pure coarse below, transition+refined above
+# -----------------------------------------------------------------------------
+group "layer1_group" add hex with z_coord <= -4000
+group "layer2_group" add hex with z_coord > -4000
+
+block 1 add hex in layer1_group
+block 2 add hex in layer2_group
+
+block 1 element type HEX8
+block 2 element type HEX8
+
+block 1 name "layer_bottom"
+block 2 name "layer_top"
+
+delete group layer1_group
+delete group layer2_group
+
+list block all
+
+# -----------------------------------------------------------------------------
+# Sidesets (boundary conditions)
+# -----------------------------------------------------------------------------
+sideset 1 surface with z_coord = -10000
+sideset 1 name "bottom"
+
+sideset 2 surface with y_coord = 0
+sideset 2 name "front"
+
+sideset 3 surface with x_coord = 10000
+sideset 3 name "right"
+
+sideset 4 surface with y_coord = 10000
+sideset 4 name "back"
+
+sideset 5 surface with x_coord = 0
+sideset 5 name "left"
+
+sideset 6 surface with z_coord = 0
+sideset 6 name "top"
+
+# -----------------------------------------------------------------------------
+# Quality check and export
+# -----------------------------------------------------------------------------
+quality hex all
+
+set large exodus file off
+export mesh "mesh_layered_3d.exo" overwrite
