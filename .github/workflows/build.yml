@@ -94,7 +94,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.DEPS }}
-          key: deps-${{ runner.os }}-v4-hypre${{ env.HYPRE_TAG }}-mfem${{ env.MFEM_TAG }}-yamlcpp${{ env.YAMLCPP_TAG }}-adios2${{ env.ADIOS2_TAG }}
+          key: deps-${{ runner.os }}-v5-hypre${{ env.HYPRE_TAG }}-mfem${{ env.MFEM_TAG }}-yamlcpp${{ env.YAMLCPP_TAG }}-adios2${{ env.ADIOS2_TAG }}
 
       # -----------------------------------------------------------------
       # Build yaml-cpp 0.9.0 from source. Ubuntu 22.04 only ships 0.7.0,
@@ -146,10 +146,17 @@ jobs:
           # uses HDF5 directly (not through MFEM) for source/receiver I/O,
           # so turning off MFEM_USE_HDF5 has no functional impact on the
           # SEMSWS build/run.
+          # MFEM_USE_METIS_5=ON is required because Ubuntu apt libmetis-dev
+          # ships METIS 5.x (which has METIS_PartGraphKway but not the
+          # METIS 4 API). Without this flag MFEM defaults to OFF, compiles
+          # mesh.cpp against the removed METIS 4 API (METIS_PartGraphVKway)
+          # and the SEMSWS link step fails with an undefined reference.
           cmake -S mfem -B mfem/build \
               -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_CXX_COMPILER=mpicxx \
               -DMFEM_USE_MPI=ON \
+              -DMFEM_USE_METIS=ON \
+              -DMFEM_USE_METIS_5=ON \
               -DMFEM_USE_HDF5=OFF \
               -DMFEM_PRECISION=single \
               -DHYPRE_DIR="$DEPS/hypre/src/hypre" \
