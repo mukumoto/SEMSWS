@@ -53,8 +53,6 @@ METRIC_INFO = {
     "dt_cfl": ("CFL dt", "s"),
     "ppw": ("Points Per Wavelength", ""),
     "aspect_ratio": ("Aspect Ratio", ""),
-    "non_orthogonality": ("Non-Orthogonality", "deg"),
-    "condition_number": ("Condition Number κ(J)", ""),
     "jacobian_det": ("Jacobian det(J)", ""),
 }
 

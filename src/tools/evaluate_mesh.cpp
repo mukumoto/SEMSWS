@@ -270,11 +270,9 @@ void EvaluateMesh(ParMesh& mesh, MaterialBase& material,
 
     // --- Collect per-element metrics ---
     IntegrationRules gll_rules(0, Quadrature1D::GaussLobatto);
-    MetricStats h_stats, dt_stats, ppw_stats, aspr_stats, nonorth_stats;
-    MetricStats cond_stats, detJ_stats;
+    MetricStats h_stats, dt_stats, ppw_stats, aspr_stats, detJ_stats;
     std::vector<real_t> h_vals(ne), dt_vals(ne), ppw_vals(ne);
-    std::vector<real_t> aspr_vals(ne), nonorth_vals(ne);
-    std::vector<real_t> cond_vals(ne), detJ_vals(ne);
+    std::vector<real_t> aspr_vals(ne), detJ_vals(ne);
     std::map<int, AttrStats> attr_stats;
 
     // Track worst PPW element
@@ -293,20 +291,14 @@ void EvaluateMesh(ParMesh& mesh, MaterialBase& material,
         real_t dt_cfl = cfl_factor * gll_dist / v_max;
         real_t ppw_elem = ngll * v_min / (max_freq * h);
 
-        // Compute Jacobian-based quality metrics at ALL DOFs (GLL nodes)
-        // Report worst (max aspect ratio, max non-orth, max cond, min det)
-        // Use GLL nodes as integration points for quality evaluation
+        // Compute Jacobian-based quality metrics at ALL DOFs (GLL nodes).
+        // Report worst (max aspect ratio, min det).
         Geometry::Type geom = mesh.GetElementBaseGeometry(e);
         const IntegrationRule &ir = gll_rules.Get(geom, 2 * order - 1);
         int npts = ir.GetNPoints();
 
         real_t aspr_elem = 1.0;
-        real_t nonorth_elem = 0.0;
-        real_t cond_elem = 1.0;
         real_t detJ_elem_min = std::numeric_limits<real_t>::max();
-
-        Vector col_i(Dim), col_j(Dim);
-        DenseMatrix inv_J(Dim);
 
         for (int q = 0; q < npts; q++) {
             const IntegrationPoint &ip = ir.IntPoint(q);
@@ -318,35 +310,7 @@ void EvaluateMesh(ParMesh& mesh, MaterialBase& material,
             real_t aspr_q = (sv_min > 0) ? sv_max / sv_min : 1e30;
             aspr_elem = std::max(aspr_elem, aspr_q);
 
-            // Non-orthogonality: max deviation from 90° across column pairs
-            for (int ci = 0; ci < Dim; ci++) {
-                jacobian.GetColumn(ci, col_i);
-                real_t norm_i = col_i.Norml2();
-                for (int cj = ci + 1; cj < Dim; cj++) {
-                    jacobian.GetColumn(cj, col_j);
-                    real_t norm_j = col_j.Norml2();
-                    if (norm_i > 0 && norm_j > 0) {
-                        real_t cos_angle = (col_i * col_j) / (norm_i * norm_j);
-                        cos_angle = std::max(-1.0, std::min(1.0, (double)cos_angle));
-                        real_t angle_deg = std::acos(std::abs(cos_angle)) * 180.0 / M_PI;
-                        real_t dev = std::abs(angle_deg - 90.0);
-                        nonorth_elem = std::max(nonorth_elem, dev);
-                    }
-                }
-            }
-
-            // Condition number: kappa(J) = ||J||_F * ||J^{-1}||_F / Dim
             real_t det_q = jacobian.Det();
-            if (std::abs(det_q) > 1e-30) {
-                real_t fro_J = jacobian.FNorm();
-                CalcInverse(jacobian, inv_J);
-                real_t fro_Jinv = inv_J.FNorm();
-                real_t cond_q = fro_J * fro_Jinv / Dim;
-                cond_elem = std::max(cond_elem, cond_q);
-            } else {
-                cond_elem = 1e30;
-            }
-
             detJ_elem_min = std::min(detJ_elem_min, det_q);
         }
 
@@ -356,16 +320,12 @@ void EvaluateMesh(ParMesh& mesh, MaterialBase& material,
         dt_vals[e] = dt_cfl;
         ppw_vals[e] = ppw_elem;
         aspr_vals[e] = aspr_elem;
-        nonorth_vals[e] = nonorth_elem;
-        cond_vals[e] = cond_elem;
         detJ_vals[e] = detJ_elem;
 
         h_stats.Add(h);
         dt_stats.Add(dt_cfl);
         ppw_stats.Add(ppw_elem);
         aspr_stats.Add(aspr_elem);
-        nonorth_stats.Add(nonorth_elem);
-        cond_stats.Add(cond_elem);
         detJ_stats.Add(detJ_elem);
 
         // Track worst PPW
@@ -389,8 +349,6 @@ void EvaluateMesh(ParMesh& mesh, MaterialBase& material,
     MetricStats dt_global = dt_stats.ReduceGlobal(comm);
     MetricStats ppw_global = ppw_stats.ReduceGlobal(comm);
     MetricStats aspr_global = aspr_stats.ReduceGlobal(comm);
-    MetricStats nonorth_global = nonorth_stats.ReduceGlobal(comm);
-    MetricStats cond_global = cond_stats.ReduceGlobal(comm);
     MetricStats detJ_global = detJ_stats.ReduceGlobal(comm);
 
     // Count PPW violations
@@ -432,8 +390,6 @@ void EvaluateMesh(ParMesh& mesh, MaterialBase& material,
         print_row("dt_CFL [s]", dt_global);
         print_row("PPW", ppw_global);
         print_row("Aspect ratio", aspr_global);
-        print_row("Non-orth [deg]", nonorth_global);
-        print_row("Cond kappa(J)", cond_global);
         print_row("det(J)", detJ_global);
 
         std::cout << "\nCFL summary:\n";
@@ -531,8 +487,6 @@ void EvaluateMesh(ParMesh& mesh, MaterialBase& material,
         Histogram dt_hist(nbins, dt_global.min_val, dt_global.max_val);
         Histogram ppw_hist(nbins, ppw_global.min_val, ppw_global.max_val);
         Histogram aspr_hist(nbins, aspr_global.min_val, aspr_global.max_val);
-        Histogram nonorth_hist(nbins, nonorth_global.min_val, nonorth_global.max_val);
-        Histogram cond_hist(nbins, cond_global.min_val, cond_global.max_val);
         Histogram detJ_hist(nbins, detJ_global.min_val, detJ_global.max_val);
 
         for (int e = 0; e < ne; e++) {
@@ -540,8 +494,6 @@ void EvaluateMesh(ParMesh& mesh, MaterialBase& material,
             dt_hist.Add(dt_vals[e]);
             ppw_hist.Add(ppw_vals[e]);
             aspr_hist.Add(aspr_vals[e]);
-            nonorth_hist.Add(nonorth_vals[e]);
-            cond_hist.Add(cond_vals[e]);
             detJ_hist.Add(detJ_vals[e]);
         }
 
@@ -549,8 +501,6 @@ void EvaluateMesh(ParMesh& mesh, MaterialBase& material,
         Histogram dt_global_hist = dt_hist.ReduceGlobal(comm);
         Histogram ppw_global_hist = ppw_hist.ReduceGlobal(comm);
         Histogram aspr_global_hist = aspr_hist.ReduceGlobal(comm);
-        Histogram nonorth_global_hist = nonorth_hist.ReduceGlobal(comm);
-        Histogram cond_global_hist = cond_hist.ReduceGlobal(comm);
         Histogram detJ_global_hist = detJ_hist.ReduceGlobal(comm);
 
         if (rank == 0) {
@@ -562,10 +512,6 @@ void EvaluateMesh(ParMesh& mesh, MaterialBase& material,
                                       "PPW", config_file, max_freq, h_global.count);
             aspr_global_hist.WriteCSV(histogram_prefix + "_aspect_ratio.csv",
                                        "aspect_ratio", config_file, max_freq, h_global.count);
-            nonorth_global_hist.WriteCSV(histogram_prefix + "_non_orthogonality.csv",
-                                       "non_orthogonality_deg", config_file, max_freq, h_global.count);
-            cond_global_hist.WriteCSV(histogram_prefix + "_condition_number.csv",
-                                       "condition_number", config_file, max_freq, h_global.count);
             detJ_global_hist.WriteCSV(histogram_prefix + "_jacobian_det.csv",
                                        "jacobian_det", config_file, max_freq, h_global.count);
 
@@ -574,8 +520,6 @@ void EvaluateMesh(ParMesh& mesh, MaterialBase& material,
             std::cout << "  " << histogram_prefix << "_dt_cfl.csv\n";
             std::cout << "  " << histogram_prefix << "_ppw.csv\n";
             std::cout << "  " << histogram_prefix << "_aspect_ratio.csv\n";
-            std::cout << "  " << histogram_prefix << "_non_orthogonality.csv\n";
-            std::cout << "  " << histogram_prefix << "_condition_number.csv\n";
             std::cout << "  " << histogram_prefix << "_jacobian_det.csv\n";
         }
     }
@@ -600,9 +544,7 @@ void PrintUsage(const char* prog) {
               << "  <prefix>_dt_cfl.csv        CFL dt_max histogram\n"
               << "  <prefix>_ppw.csv           PPW histogram\n"
               << "  <prefix>_aspect_ratio.csv  Aspect ratio histogram\n"
-              << "  <prefix>_non_orthogonality.csv  Non-orthogonality histogram (degrees)\n"
-              << "  <prefix>_condition_number.csv  Condition number histogram\n"
-              << "  <prefix>_jacobian_det.csv      Jacobian determinant histogram\n";
+              << "  <prefix>_jacobian_det.csv  Jacobian determinant histogram\n";
 }
 
 // =============================================================================
