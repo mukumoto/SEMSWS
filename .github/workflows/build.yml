@@ -15,8 +15,6 @@ concurrency:
 jobs:
   build:
     name: Ubuntu 22.04, CPU, single precision
-    # ubuntu-22.04 (jammy) ships libadios2-openmpi-dev in main; the package
-    # was reorganized in 24.04 (noble) and the simple name no longer exists.
     runs-on: ubuntu-22.04
 
     env:
@@ -28,14 +26,17 @@ jobs:
       HYPRE_TAG:    v2.33.0
       MFEM_TAG:     v4.9
       YAMLCPP_TAG:  0.9.0
+      ADIOS2_TAG:   v2.10.2
 
     steps:
       - uses: actions/checkout@v4
 
       # -----------------------------------------------------------------
-      # System packages: compiler toolchain, OpenMPI, parallel HDF5, ADIOS2.
-      # NetCDF is intentionally omitted: SEMSWS does not require it at the
-      # CMake level (only MFEM's optional Exodus reader uses it).
+      # System packages: compiler toolchain, OpenMPI, parallel HDF5.
+      # ADIOS2 is built from source below (no Ubuntu apt package ships a
+      # version SEMSWS can pick up reliably). NetCDF is intentionally
+      # omitted: SEMSWS does not require it at the CMake level (only
+      # MFEM's optional Exodus reader uses it).
       # -----------------------------------------------------------------
       - name: Install apt dependencies
         run: |
@@ -43,8 +44,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
               cmake build-essential gfortran git ca-certificates \
               libopenmpi-dev openmpi-bin \
-              libhdf5-openmpi-dev \
-              libadios2-openmpi-dev
+              libhdf5-openmpi-dev
 
       # -----------------------------------------------------------------
       # ccache speeds up SEMSWS recompiles across runs (deps cache covers
@@ -60,12 +60,12 @@ jobs:
       # Heavy dependency cache. Hit ratio ~ 100% as long as the tags above
       # and this key string don't change.
       # -----------------------------------------------------------------
-      - name: Cache MFEM + hypre + yaml-cpp builds
+      - name: Cache MFEM + hypre + yaml-cpp + ADIOS2 builds
         id: deps-cache
         uses: actions/cache@v4
         with:
           path: ${{ env.DEPS }}
-          key: deps-${{ runner.os }}-v1-hypre${{ env.HYPRE_TAG }}-mfem${{ env.MFEM_TAG }}-yamlcpp${{ env.YAMLCPP_TAG }}
+          key: deps-${{ runner.os }}-v2-hypre${{ env.HYPRE_TAG }}-mfem${{ env.MFEM_TAG }}-yamlcpp${{ env.YAMLCPP_TAG }}-adios2${{ env.ADIOS2_TAG }}
 
       # -----------------------------------------------------------------
       # Build yaml-cpp 0.9.0 from source. Ubuntu 24.04 only ships 0.8.0,
@@ -120,13 +120,38 @@ jobs:
           cmake --build mfem/build -j"$(nproc)"
 
       # -----------------------------------------------------------------
+      # ADIOS2: MPI-enabled, no extras (Fortran / Python / SST / DataMan).
+      # SEMSWS uses BP5 plus the C++11 MPI bindings (-ladios2_cxx11_mpi).
+      # -----------------------------------------------------------------
+      - name: Build ADIOS2 ${{ env.ADIOS2_TAG }}
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: |
+          cd "$DEPS"
+          git clone --depth=1 --branch "$ADIOS2_TAG" \
+              https://github.com/ornladios/ADIOS2.git
+          cmake -S ADIOS2 -B ADIOS2/build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX="$DEPS/adios2-install" \
+              -DCMAKE_CXX_COMPILER=mpicxx \
+              -DCMAKE_C_COMPILER=mpicc \
+              -DADIOS2_USE_MPI=ON \
+              -DADIOS2_USE_HDF5=OFF \
+              -DADIOS2_USE_Fortran=OFF \
+              -DADIOS2_USE_Python=OFF \
+              -DADIOS2_USE_SST=OFF \
+              -DADIOS2_USE_DataMan=OFF \
+              -DADIOS2_BUILD_EXAMPLES=OFF \
+              -DBUILD_TESTING=OFF
+          cmake --build ADIOS2/build --target install -j"$(nproc)"
+
+      # -----------------------------------------------------------------
       # SEMSWS itself.
       # -----------------------------------------------------------------
       - name: Configure SEMSWS
         run: |
           cmake -B build \
               -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_PREFIX_PATH="$DEPS/yaml-cpp-install" \
+              -DCMAKE_PREFIX_PATH="$DEPS/yaml-cpp-install;$DEPS/adios2-install" \
               -DMFEM_DIR="$DEPS/mfem/build" \
               -DHDF5_ROOT="$HDF5_ROOT" \
               -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
