@@ -14,8 +14,10 @@ concurrency:
 
 jobs:
   build:
-    name: Ubuntu 24.04, CPU, single precision
-    runs-on: ubuntu-24.04
+    name: Ubuntu 22.04, CPU, single precision
+    # ubuntu-22.04 (jammy) ships libadios2-openmpi-dev in main; the package
+    # was reorganized in 24.04 (noble) and the simple name no longer exists.
+    runs-on: ubuntu-22.04
 
     env:
       DEPS: ${{ github.workspace }}/deps

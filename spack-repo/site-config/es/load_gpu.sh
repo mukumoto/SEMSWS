@@ -12,11 +12,11 @@
 module purge
 module load zlib/1.2.11 szip/2.1.1
 module load HDF5/1.10.5
-module load NetCDF4/all
 module load NVIDIAHPCSDK/24.7/nvhpc-hpcx-cuda12
 module load METIS/5.1.0
 module load CUDA/12.0.0
 module load Python/3.12.6
+module load Git/2.30.1
 
 # Make sure /usr/bin (system git, etc.) is reachable. Spack's startup check
 # subprocesses git via a sanitized PATH, so prepend it explicitly. Also point
