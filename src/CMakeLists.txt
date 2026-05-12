@@ -476,26 +476,30 @@ if(SEM_USE_CUDA)
     list(APPEND SEM_LINK_LIBS CUDA::cudart)
 endif()
 
-# Static MFEM (libmfem.a) with MFEM_USE_METIS=ON leaves METIS_PartGraph*
-# symbols unresolved in mesh.cpp.o; MFEMConfig.cmake does not propagate
-# the METIS link, so consumers must add it themselves. Shared MFEM hides
-# this because libmfem.so links libmetis at MFEM build time.
-if(MFEM_USE_METIS)
-    find_library(SEM_METIS_LIB
-        NAMES metis
-        HINTS ${MFEM_DIR}/lib
-              ${MFEM_DIR}/../metis/lib
-              /usr/lib/x86_64-linux-gnu)
-    if(SEM_METIS_LIB)
-        message(STATUS "SEMSWS: appending METIS to SEM_LINK_LIBS: ${SEM_METIS_LIB}")
-        list(APPEND SEM_LINK_LIBS ${SEM_METIS_LIB})
-    else()
-        message(WARNING
-            "MFEM_USE_METIS=ON but libmetis was not found via find_library.\n"
-            "  Static MFEM builds will fail to link with undefined references\n"
-            "  to METIS_PartGraphKway / METIS_PartGraphVKway. Pass\n"
-            "  -DSEM_METIS_LIB=<full path to libmetis.so|.a> to override.")
-    endif()
+# Static MFEM (libmfem.a) built with MPI leaves METIS_PartGraph* symbols
+# unresolved in mesh.cpp.o; MFEMConfig.cmake does not propagate the METIS
+# link, so consumers must add it themselves. Shared MFEM hides this
+# because libmfem.so encodes libmetis in its DT_NEEDED entries.
+#
+# Not gated on MFEM_USE_METIS — MFEMConfig.cmake does not export that
+# variable (only MFEM_USE_METIS_5, which means "METIS is version 5+",
+# not "METIS is in use"). MFEM_USE_MPI=ON in MFEM's CMake always pulls
+# METIS in, and SEMSWS itself REQUIREs MPI a few lines above, so the
+# unconditional find_library here is correct.
+find_library(SEM_METIS_LIB
+    NAMES metis
+    HINTS ${MFEM_DIR}/lib
+          ${MFEM_DIR}/../metis/lib
+          /usr/lib/x86_64-linux-gnu)
+if(SEM_METIS_LIB)
+    message(STATUS "SEMSWS: appending METIS to SEM_LINK_LIBS: ${SEM_METIS_LIB}")
+    list(APPEND SEM_LINK_LIBS ${SEM_METIS_LIB})
+else()
+    message(WARNING
+        "libmetis was not found via find_library. Static MFEM builds will\n"
+        "  fail to link with undefined references to METIS_PartGraphKway /\n"
+        "  METIS_PartGraphVKway. Pass -DSEM_METIS_LIB=<full path to\n"
+        "  libmetis.so|.a> or add the install prefix to CMAKE_PREFIX_PATH.")
 endif()
 
 # Helper function to create a SEM library
