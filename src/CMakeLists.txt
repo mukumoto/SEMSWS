@@ -36,32 +36,9 @@ find_package(yaml-cpp 0.9.0 REQUIRED)
 message(STATUS "yaml-cpp via find_package: ${yaml-cpp_DIR}")
 
 # =============================================================================
-# Find MFEM. Two installation styles are supported:
-#   1. CMake-built MFEM (hand build, EasyBuild, ALCF/OLCF spack stacks that
-#      use the CMake build): MFEMConfig.cmake exists; standard find_package.
-#   2. Make-built MFEM (Spack 0.22 builtin recipe, plain `make install`): only
-#      share/mfem/config.mk is shipped. Fall back to parsing config.mk via
-#      cmake/FindMFEMFromMakeConfig.cmake. When upstream Spack mfem grows a
-#      CMakePackage variant, the fallback becomes dead code with no effort.
-#
-# Preserve the user-supplied MFEM_DIR before calling find_package(MFEM CONFIG):
-# CMake silently overwrites MFEM_DIR with MFEM_DIR-NOTFOUND in the cache when
-# the config search fails, which would break the fallback that consumes it.
+# Find MFEM. Requires a CMake-built MFEM that ships MFEMConfig.cmake.
 # =============================================================================
-set(_SEM_MFEM_DIR_HINT "${MFEM_DIR}")
-find_package(MFEM CONFIG QUIET PATHS ${_SEM_MFEM_DIR_HINT})
-if(NOT MFEM_FOUND)
-    # Restore the original hint and let the Make-config fallback consume it.
-    set(MFEM_DIR "${_SEM_MFEM_DIR_HINT}")
-    message(STATUS "MFEMConfig.cmake not found; trying config.mk fallback")
-    message(STATUS "  MFEM_DIR (restored): ${MFEM_DIR}")
-    include(${PROJECT_SOURCE_DIR}/cmake/FindMFEMFromMakeConfig.cmake)
-endif()
-if(NOT MFEM_FOUND)
-    message(FATAL_ERROR
-        "MFEM not found via either MFEMConfig.cmake or config.mk fallback.\n"
-        "  MFEM_DIR was: ${_SEM_MFEM_DIR_HINT}")
-endif()
+find_package(MFEM CONFIG REQUIRED PATHS ${MFEM_DIR})
 # SEMSWS uses <mfem.hpp> exclusively; the umbrella only pulls in forall.hpp
 # and linalg/tensor.hpp (transitively dual.hpp) starting in MFEM 4.9.
 if(MFEM_VERSION AND MFEM_VERSION VERSION_LESS 4.9)
