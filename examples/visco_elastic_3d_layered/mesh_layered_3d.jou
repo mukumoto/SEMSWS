@@ -4,7 +4,7 @@
 # Domain: 10000m (X) x 10000m (Y) x 10000m (Z)
 # 2 Layers with conforming 2:1 h-refinement (HEX only)
 #
-# Coordinate system (matches SPECFEM3D):
+# Coordinate system:
 #   x = 0 to 10000, y = 0 to 10000
 #   z = -10000 (bottom) to 0 (surface)
 #

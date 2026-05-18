@@ -8,11 +8,9 @@ using Aki & Richards (2002) eq. 4.32-4.33, with a Ricker wavelet STF.
 Outputs:
   - ref/XX.Z[1-6].FX[XYZ].semd: Reference seismograms
 
-Adapted from SPECFEM3D analytic_solution_elastic benchmark.
-
 Coordinate conventions:
   Aki & Richards: x=North, y=East, z=Down
-  SEM-Next:       x=East,  y=North, z=Up (= SPECFEM3D Cartesian)
+  SEM-Next:       x=East,  y=North, z=Up
 
 The Mrp moment tensor component corresponds to:
   A&R: slip on (x1,x2)-plane along x1 -> radiation sin(2*theta)*cos(phi) etc.
@@ -208,7 +206,7 @@ def main():
 
         times, u_x, u_y, u_z = compute_analytical(x_n, y_e, z_d)
 
-        # Write reference files in SPECFEM ASCII format: time amplitude
+        # Write reference files in two-column ASCII format: time amplitude
         for comp, data in [("FXX", u_x), ("FXY", u_y), ("FXZ", u_z)]:
             fname = os.path.join(ref_dir, f"XX.{name}.{comp}.semd")
             with open(fname, 'w') as f:

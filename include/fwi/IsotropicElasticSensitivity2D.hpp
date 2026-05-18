@@ -10,8 +10,8 @@
  *   K_μ = -∫ 2 ε(u):ε(λ^*) dt        with ε:ε' = Σ_ij ε_ij·ε'_ij
  *   K_ρ = -∫ ü · λ^* dt              (vector dot)
  *
- * These are converted to (Vp_user, Vs_user, ρ) at Save() time using the
- * TOY2DAC convention.  With viscoelastic attenuation the forward solver
+ * These are converted to (Vp_user, Vs_user, ρ) at Save() time via the
+ * standard chain rule.  With viscoelastic attenuation the forward solver
  * internally uses unrelaxed moduli (λ_u, μ_u) = (c_κ κ_user − c_μ μ_user,
  * c_μ μ_user) in 2D (plane-strain κ = λ + μ). Propagating a perturbation
  * of the user-facing (Vp, Vs) through the chain rule gives:

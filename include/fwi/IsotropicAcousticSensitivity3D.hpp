@@ -6,7 +6,7 @@
  * public API; the only differences are the extra gradient component and
  * the 10-entry invJPacked layout (9 invJ entries + detJ).
  *
- *   K_Vp = -Σ_t 2/(ρ·Vp³) · p̈_fwd · p_adj · dt       (TOY2DAC, mass path)
+ *   K_Vp = -Σ_t 2/(ρ·Vp³) · p̈_fwd · p_adj · dt       (mass path)
  *   K_ρ  = -Σ_t (1/ρ²) · ∇p_fwd · ∇p_adj · dt         (stiffness path)
  *
  * Pseudo-Hessian (Shin diagonal, forward-only):

@@ -5,7 +5,8 @@
  * 3D analogue of IsotropicAcousticSensitivityAD2D: two single-seed AD
  * passes per time step (inv_kappa for the mass path, inv_rho for the
  * stiffness path) with a 3-axis gradient via AcousticFluxPhysical3D<dual>.
- * FinalizeKernels() applies the TOY2DAC chain rule to (K_Vp, K_ρ).
+ * FinalizeKernels() applies the (Vp, ρ)-independent chain rule to
+ * produce (K_Vp, K_ρ).
  */
 
 #include "fwi/IsotropicAcousticSensitivityAD3D.hpp"
@@ -282,7 +283,7 @@ void IsotropicAcousticSensitivityAD3D::AccumulateRhoKernel_AD(
 }
 
 // =============================================================================
-// FinalizeKernels — TOY2DAC chain rule with viscoacoustic unrelaxed correction
+// FinalizeKernels — (Vp, ρ)-independent chain rule with viscoacoustic correction
 // =============================================================================
 //
 // For viscoacoustic, kappa_ stores the unrelaxed κ_u = c · κ_user. The FWI

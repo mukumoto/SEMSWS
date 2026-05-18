@@ -4,8 +4,8 @@
  *
  * 3D counterpart to IsotropicElasticSensitivityAD2D. Same two single-seed
  * AD passes per quadrature point (λ, then μ) + direct ρ path, extended to
- * the full 3D strain-stress contraction. Save() applies the TOY2DAC chain
- * rule (identical to the 2D form).
+ * the full 3D strain-stress contraction. Save() applies the chain rule
+ * (identical to the 2D form).
  */
 
 #ifndef SEM_ISOTROPIC_ELASTIC_SENSITIVITY_AD_3D_HPP

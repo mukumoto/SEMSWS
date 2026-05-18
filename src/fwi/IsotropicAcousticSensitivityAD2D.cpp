@@ -9,7 +9,8 @@
  * Per-GLL-point structure mirrors the hand version exactly except that
  * the material-dependent product is evaluated with a dual-typed material
  * coefficient, and the final accumulation goes into "raw" (1/ρ, 1/κ)
- * space. Save() converts to (V_p, ρ) using TOY2DAC convention.
+ * space. Save() converts to (V_p, ρ) using the standard (V_p, ρ)-independent
+ * chain rule.
  */
 
 #include "fwi/IsotropicAcousticSensitivityAD2D.hpp"
@@ -321,15 +322,14 @@ void IsotropicAcousticSensitivityAD2D::AccumulateRhoKernel_AD(
 // Save — materialize (Vp, ρ) kernels from (1/κ, 1/ρ) accumulators
 // =============================================================================
 //
-// TOY2DAC convention: (Vp, ρ) treated as independent → κ-path contribution
-// to K_ρ is NOT added (matches hand-version bitwise).
+// (Vp, ρ) treated as independent → κ-path contribution to K_ρ is NOT added.
 //
 //   K_Vp(x) = K_{1/κ}(x) · ∂(1/κ)/∂Vp|_ρ = K_{1/κ} · (-2·ρ⁻¹·Vp⁻³·ρ) = -2 K_{1/κ} / (ρ·Vp³)
 //     ...  actually simplest: ∂(1/κ)/∂Vp = ∂(1/(ρVp²))/∂Vp = -2·ρ·Vp / (ρVp²)² = -2/(ρ·Vp³)
 //   K_ρ(x)  = K_{1/ρ}(x) · ∂(1/ρ)/∂ρ = K_{1/ρ} · (-1/ρ²)
 //
-// These match the hand version's convention exactly (TOY2DAC; treats ρ
-// independent of κ despite κ = ρVp² — a standard acoustic FWI choice).
+// Standard acoustic FWI convention: ρ treated independent of κ despite
+// κ = ρ·Vp².
 
 void IsotropicAcousticSensitivityAD2D::FinalizeKernels() const
 {
@@ -356,7 +356,7 @@ void IsotropicAcousticSensitivityAD2D::FinalizeKernels() const
         const real_t vp2    = k_user * ir;            // Vp_user²
         const real_t vp     = std::sqrt(vp2);
         const real_t c_vp   = 2.0 / (c_corr * rho * vp2 * vp);  // 2/(c·ρ·Vp_user³)
-        // TOY2DAC chain-rule map:
+        // Chain-rule map:
         //   K_Vp  = -c_vp · K_{1/κ_u}   (κ-path accumulated in κ_u space)
         //   K_ρ   = -ir²  · K_{1/ρ}      (ρ-path unaffected by attenuation)
         h_vp[i]  = -c_vp * h_kik[i];

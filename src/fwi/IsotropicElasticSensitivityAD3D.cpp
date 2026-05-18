@@ -7,8 +7,8 @@
  * and contracts the tangent-stress tensor with the adjoint strain using the
  * full 3D σ:ε formula
  *   σ:ε = σxx εxx + σyy εyy + σzz εzz + 2 (σxy εxy + σxz εxz + σyz εyz).
- * The ρ path (ü·λ^*) is pointwise, no dual needed. Save() matches the hand
- * version's TOY2DAC chain rule exactly.
+ * The ρ path (ü·λ^*) is pointwise, no dual needed. Save() applies the
+ * chain rule (λ, μ, ρ) → (Vp, Vs, ρ).
  */
 
 #include "fwi/IsotropicElasticSensitivityAD3D.hpp"
@@ -372,7 +372,7 @@ void IsotropicElasticSensitivityAD3D::AccumulateKernel(
 }
 
 // =============================================================================
-// Save — same TOY2DAC chain rule as hand 3D
+// Save — chain rule (λ, μ, ρ) → (Vp, Vs, ρ) (same as hand 3D)
 // =============================================================================
 
 void IsotropicElasticSensitivityAD3D::Save(

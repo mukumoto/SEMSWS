@@ -3,7 +3,7 @@
  * @brief Sensitivity kernel for 2D isotropic acoustic media
  *
  * Accumulates Vp and ρ sensitivity kernels directly from forward and adjoint wavefields:
- *   K_Vp = -Σ_t 2/(ρ·Vp³) · p̈_fwd · p_adj · dt   (velocity kernel, TOY2DAC convention)
+ *   K_Vp = -Σ_t 2/(ρ·Vp³) · p̈_fwd · p_adj · dt   (velocity kernel)
  *   K_ρ  = -Σ_t (1/ρ²) · ∇p_fwd · ∇p_adj · dt     (density kernel, from d(1/ρ)/dρ = -1/ρ²)
  *
  * Pseudo-Hessian (Shin diagonal approximation):

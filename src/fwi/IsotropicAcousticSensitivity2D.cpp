@@ -2,7 +2,7 @@
  * @file IsotropicAcousticSensitivity2D.cpp
  * @brief Sensitivity kernel implementation for 2D isotropic acoustic media
  *
- * Vp kernel: K_Vp += -2/(ρ·Vp³) · p̈_fwd · p_adj · dt    (TOY2DAC convention)
+ * Vp kernel: K_Vp += -2/(ρ·Vp³) · p̈_fwd · p_adj · dt
  * ρ  kernel: K_ρ  += -(1/ρ²) · ∇p_fwd · ∇p_adj · dt      (gradient of misfit)
  *
  * Pseudo-Hessian (Shin diagonal approximation):
@@ -153,7 +153,7 @@ void IsotropicAcousticSensitivity2D::Accumulate(
 }
 
 // =============================================================================
-// Vp Kernel: K_Vp += -2/(ρ·Vp³) · p̈_fwd · p_adj · dt  (TOY2DAC convention)
+// Vp Kernel: K_Vp += -2/(ρ·Vp³) · p̈_fwd · p_adj · dt
 // =============================================================================
 // This is a simple GLL point-wise product — no gradient computation needed.
 

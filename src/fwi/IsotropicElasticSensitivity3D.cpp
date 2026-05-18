@@ -327,7 +327,7 @@ void IsotropicElasticSensitivity3D::AccumulateKernel(
 }
 
 // =============================================================================
-// Save — TOY2DAC chain rule (same as 2D)
+// Save — chain rule (same as 2D)
 // =============================================================================
 
 void IsotropicElasticSensitivity3D::Save(

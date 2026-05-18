@@ -100,7 +100,7 @@ receivers:
   type: [DISP]
 
   list:
-    # Receiver positions mapped from SPECFEM3D STATIONS:
+    # Receiver positions (Aki–Richards convention mapped to SEM-Next):
     # A&R (x_N, y_E, z_D) -> SEM-Next (22000+y_E, 22000+x_N, 22000-z_D)
     - name: "Z1"
       location: [25000.0, 23000.0, 18000.0]

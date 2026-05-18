@@ -9,7 +9,7 @@
  *   K_μ = -∫ 2 ε(u):ε(λ*) dt           (full 3×3 symmetric contraction)
  *   K_ρ = -∫ ü · λ* dt                 (3-component vector dot)
  *
- * TOY2DAC chain rule in Save() (same as 2D):
+ * Chain rule in Save() (same as 2D):
  *   K_Vp = 2ρVp · K_λ
  *   K_Vs = 2ρVs · (K_μ − 2 K_λ)
  *   K_ρ  = K_ρ

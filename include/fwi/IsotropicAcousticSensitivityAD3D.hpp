@@ -5,7 +5,7 @@
  * 3D counterpart to IsotropicAcousticSensitivityAD2D. Same two-seed layout
  * (inv_rho for the stiffness path, inv_kappa for the mass path) with
  * forward-mode AD via mfem::future::dual; FinalizeKernels() applies the
- * TOY2DAC chain rule to populate (K_Vp, K_ρ) at Save() time.
+ * (Vp, ρ)-independent chain rule to populate (K_Vp, K_ρ) at Save() time.
  */
 
 #ifndef SEM_ISOTROPIC_ACOUSTIC_SENSITIVITY_AD_3D_HPP

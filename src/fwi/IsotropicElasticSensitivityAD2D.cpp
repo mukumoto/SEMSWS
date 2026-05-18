@@ -9,8 +9,7 @@
  * strain yields the per-time-step kernel contribution. The ρ path
  * (ü·λ^*) is pointwise and does not use dual.
  *
- * Save() applies the TOY2DAC chain rule (λ, μ, ρ) → (Vp, Vs, ρ), matching
- * the hand version exactly.
+ * Save() applies the chain rule (λ, μ, ρ) → (Vp, Vs, ρ).
  */
 
 #include "fwi/IsotropicElasticSensitivityAD2D.hpp"
@@ -349,7 +348,7 @@ void IsotropicElasticSensitivityAD2D::AccumulateKernel(
 }
 
 // =============================================================================
-// Save — identical chain rule to the hand version (TOY2DAC).
+// Save — chain rule (λ, μ, ρ) → (Vp, Vs, ρ).
 // =============================================================================
 
 void IsotropicElasticSensitivityAD2D::Save(

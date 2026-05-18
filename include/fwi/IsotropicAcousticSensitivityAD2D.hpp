@@ -17,11 +17,10 @@
  *   - Mass path (Vp kernel): seed dual over inv_kappa, compute
  *     `(1/κ)·p̈` as dual, multiply by p_adj, accumulate into
  *     `k_invkappa_` (∂J/∂(1/κ) accumulator).
- *   - Save(): convert from (K_{1/ρ}, K_{1/κ}) to (K_ρ, K_Vp) via TOY2DAC
- *     chain rule — (Vp, ρ) treated as independent parameters:
+ *   - Save(): convert from (K_{1/ρ}, K_{1/κ}) to (K_ρ, K_Vp) via the
+ *     standard (Vp, ρ)-independent chain rule:
  *         K_Vp  =  -2/(ρ·Vp³)  ·  K_{1/κ}        (mass path only)
  *         K_ρ   =  -1/ρ²       ·  K_{1/ρ}        (stiffness path only)
- *     Matches existing hand-version outputs bitwise.
  *
  * References:
  *   - include/fwi/IsotropicAcousticSensitivity2D.hpp    (hand version)
@@ -73,7 +72,7 @@ public:
     void SaveHessian(const std::string& dir, ParMesh& mesh, int source_id) override;
     void ResetHessian() override;
 
-    /// Apply the TOY2DAC chain rule to populate vp_kernel_ and rho_kernel_
+    /// Apply the chain rule to populate vp_kernel_ and rho_kernel_
     /// from the raw (k_invrho_, k_invkappa_) accumulators. Called
     /// automatically by Save() and by VpKernel()/RhoKernel(); tests may
     /// also call it explicitly to compare against the hand version.
@@ -108,7 +107,7 @@ private:
     Vector rho_hessian_;  // Σ (1/ρ²)·|∇φ_fwd|² · dt
 
     // Public-API kernels in (Vp, ρ) space, derived from k_invrho_/k_invkappa_
-    // at Save() time via TOY2DAC convention.
+    // at Save() time via the (Vp, ρ)-independent chain rule.
     mutable Vector vp_kernel_;
     mutable Vector rho_kernel_;
 

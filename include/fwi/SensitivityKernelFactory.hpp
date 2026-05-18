@@ -34,7 +34,7 @@ class SensitivityKernelBase3D;
 ///
 /// @param backend Selector for the implementation backend:
 ///   - "hand" (default): IsotropicElasticSensitivity2D with a classical
-///     chain-rule accumulation; writes K_Vp, K_Vs, K_ρ in TOY2DAC form.
+///     chain-rule accumulation; writes K_Vp, K_Vs, K_ρ.
 ///   - "ad": reserved for the forward-mode AD version (not yet landed).
 std::unique_ptr<SensitivityKernelBase2D>
 CreateElasticSensitivityKernel2D(const ElasticMaterialBase2D& material,
@@ -46,7 +46,7 @@ CreateElasticSensitivityKernel2D(const ElasticMaterialBase2D& material,
 ///
 /// @param backend "hand" (IsotropicElasticSensitivity3D, classical chain rule)
 ///                or "ad" (IsotropicElasticSensitivityAD3D, forward-mode AD).
-///                Both write K_Vp, K_Vs, K_ρ in TOY2DAC form.
+///                Both write K_Vp, K_Vs, K_ρ.
 std::unique_ptr<SensitivityKernelBase3D>
 CreateElasticSensitivityKernel3D(const ElasticMaterialBase3D& material,
                                  mfem::ParFiniteElementSpace& fes,

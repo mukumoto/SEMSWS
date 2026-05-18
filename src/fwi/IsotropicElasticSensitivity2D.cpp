@@ -8,8 +8,8 @@
  * gathers, the divergence + full strain contractions, and a scalar
  * ρ-path (ü · λ^*) instead of the Laplacian form.
  *
- * Save() performs the TOY2DAC chain rule (λ, μ, ρ) → (Vp, Vs, ρ) so the
- * BP output is directly consumable by downstream tools (sem_viz, etc).
+ * Save() applies the chain rule (λ, μ, ρ) → (Vp, Vs, ρ) so the BP output
+ * is directly consumable by downstream tools (sem_viz, etc).
  */
 
 #include "fwi/IsotropicElasticSensitivity2D.hpp"
@@ -315,7 +315,7 @@ void IsotropicElasticSensitivity2D::AccumulateKernel(
 }
 
 // =============================================================================
-// Save — TOY2DAC chain rule (λ, μ, ρ) → (Vp, Vs, ρ)
+// Save — chain rule (λ, μ, ρ) → (Vp, Vs, ρ)
 // =============================================================================
 
 namespace {
